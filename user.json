@@ -1,0 +1,81 @@
+{
+    "positions": [
+        {
+            "excludeKeywords": [],
+            "keywords": [
+                "软件",
+                "Saas",
+                "B端",
+                "web端"
+            ],
+            "name": "UI设计师"
+        },
+        {
+            "excludeKeywords": [],
+            "keywords": [
+                "软件",
+                "政务",
+                "计算机",
+                "项目交付"
+            ],
+            "name": "软件产品项目经理"
+        },
+        {
+            "excludeKeywords": [],
+            "keywords": [
+                "软件",
+                "b端",
+                "c端",
+                "原型",
+                "Java",
+                "计算机类"
+            ],
+            "name": "产品经理"
+        },
+        {
+            "excludeKeywords": [],
+            "keywords": [],
+            "name": "销售助理"
+        },
+        {
+            "excludeKeywords": [],
+            "keywords": [
+                "软件",
+                "计算机",
+                "政务",
+                "b端",
+                "会画原型"
+            ],
+            "name": "产品/项目经理"
+        },
+        {
+            "excludeKeywords": [],
+            "keywords": [
+                "vue",
+                "react",
+                "HTML",
+                "Javascript",
+                "webpack"
+            ],
+            "name": "前端工程师"
+        },
+        {
+            "excludeKeywords": [],
+            "keywords": [],
+            "name": "集成测试工程师"
+        },
+        {
+            "name": "方案工程师",
+            "keywords": [],
+            "excludeKeywords": []
+        }
+    ],
+    "currentPosition": "产品/项目经理",
+    "isAndMode": false,
+    "matchLimit": 50,
+    "enableSound": false,
+    "scrollDelayMin": 3,
+    "scrollDelayMax": 5,
+    "clickFrequency": 7,
+    "aiExpireTime": null
+}
