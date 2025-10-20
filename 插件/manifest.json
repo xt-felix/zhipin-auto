@@ -1,0 +1,32 @@
+{
+    "manifest_version": 3,
+    "name": "Boss直聘接口结果显示器",
+    "version": "0.1.0",
+    "description": "监听页面内对 https://www.zhipin.com/wapi/zpjob/rec/geek/list 的请求，并缓存返回数据。",
+    "permissions": [
+        "storage"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://www.zhipin.com/*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_start",
+            "all_frames": true
+        }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "injected.js",
+                "overlay.css"
+            ],
+            "matches": [
+                "https://www.zhipin.com/*"
+            ]
+        }
+    ]
+}

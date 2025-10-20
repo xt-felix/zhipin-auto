@@ -4,9 +4,11 @@ class BossParser extends BaseParser {
     constructor() {
         super();
         // 定义完整的 class 名称
+
+        //新牛人 recommend-card-list
         this.fullClasses = {
             container: 'card-list',
-            items: 'candidate-card-wrap',
+            items: ['candidate-card-wrap', 'geek-info-card', 'card-container', 'card-inner clear-fix'],
             name: 'name',
             age: 'job-card-left_labels__wVUfs',
             education: 'base-info join-text-wrap',
@@ -22,7 +24,7 @@ class BossParser extends BaseParser {
         // 定义部分 class 名称（用于模糊匹配）
         this.selectors = {
             container: 'card-list',
-            items: ['candidate-card-wrap', 'card-inner clear-fix'],
+            items: ['candidate-card-wrap', 'card-inner clear-fix', 'card-container', 'geek-info-card'],
             name: 'name',
             age: ['job-card-left'],
             education: ['base-info join-text-wrap', 'geek-info-detail'],
@@ -43,151 +45,261 @@ class BossParser extends BaseParser {
 
         // BOSS特定的选择器
         this.detailSelectors = {
-            detailLink: ['card-inner common-wrap', 'card-inner clear-fix', 'candidate-card-wrap', 'card-inner blue-collar-wrap'],
+            detailLink: ['card-inner common-wrap', 'card-inner clear-fix', 'candidate-card-wrap', 'card-inner blue-collar-wrap', 'card-container', 'geek-info-card', 'card-inner new-geek-wrap'],
             closeButton: ['boss-popup__close', 'boss-layer__wrapper', 'resume-custom-close', 'boss-layer__wrapper', 'boss-popup__close'],
             closeButtonXpath: ['//*[@id="boss-dynamic-dialog-1j38fleo5"]/div/div[2]']
         };
+
+        // 初始化数据拦截监听
+        this.initDataInterceptor();
     }
+
+    // 初始化数据拦截监听
+    initDataInterceptor() {
+        console.log('初始化Boss直聘数据拦截监听器...');
+
+        // 监听来自boss_interceptor.js的拦截数据
+        window.addEventListener('message', (event) => {
+            if (event.source !== window) return;
+
+            if (event.data && event.data.source === 'boss-plugin' && event.data.type === 'geek-list') {
+
+                if (event.data.data) {
+                    this.processInterceptedData(event.data.data.zpData.geekList || event.data.data.zpData.geeks);
+                }
+            }
+        });
+    }
+
+    // 处理拦截到的数据
+    async processInterceptedData(apiData) {
+        try {
+
+            if (apiData) {
+                const candidates = apiData;
+
+                // 直接存储拦截到的数据
+                await new Promise((resolve, reject) => {
+                    chrome.storage.local.set({
+                        bossZhipinCandidates: candidates
+                    }, () => {
+                        if (chrome.runtime.lastError) {
+                            console.error('保存缓存数据失败:', chrome.runtime.lastError);
+                            reject(chrome.runtime.lastError);
+                        } else {
+                            console.log('候选人数据直接缓存完成');
+                            resolve();
+                        }
+                    });
+                });
+            }
+        } catch (error) {
+            console.error('处理拦截数据失败:', error);
+        }
+    }
+
+    // 删除不再需要的合并方法
 
     // 添加一个新的查找元素的方法
     findElements() {
         let items = [];
 
         // 1. 首先尝试使用完整的 class 名称
-        items = document.getElementsByClassName(this.fullClasses.items);
+        // items = document.getElementsByClassName(this.fullClasses.items);
+        for (const item of this.fullClasses.items) {
+            items = document.getElementsByClassName(item);
+            if (items.length > 0) {
+                break;
+            }
+        }
 
         if (items.length === 0) {
+
+            for (const item of this.selectors.items) {
+                items = document.getElementsByClassName(item);
+                if (items.length > 0) {
+                    break;
+                }
+            }
             // 2. 尝试使用简单的 class 名称
-            items = document.getElementsByClassName(this.selectors.items);
+            // items = document.getElementsByClassName(this.selectors.items);
         }
 
         if (items.length === 0) {
+
+            for (const item of this.fullClasses.items) {
+                items = document.querySelectorAll(`[class*="${item}"]`);
+                if (items.length > 0) {
+                    break;
+                }
+            }
             // 3. 尝试使用模糊匹配
-            items = document.querySelectorAll(`[class*="${this.selectors.items}"]`);
         }
 
         if (items.length === 0) {
+
+            for (const item of this.fullClasses.items) {
+                items = document.querySelectorAll(`[class^="${item}"], [class*=" ${this.selectors.items}"]`);
+                if (items.length > 0) {
+                    break;
+                }
+            }
             // 4. 尝试使用前缀匹配
-            items = document.querySelectorAll(`[class^="${this.selectors.items}"], [class*=" ${this.selectors.items}"]`);
         }
 
         return items;
     }
 
+    // 从缓存中获取候选人数据
+    async getCachedCandidateData() {
+        return new Promise((resolve) => {
+            chrome.storage.local.get(['bossZhipinCandidates'], (result) => {
+                if (chrome.runtime.lastError) {
+                    console.error('获取缓存数据失败:', chrome.runtime.lastError);
+                    resolve([]);
+                    return;
+                }
+                resolve(result.bossZhipinCandidates || []);
+            });
+        });
+    }
+
+    // 根据候选人姓名从缓存中查找完整信息
+    findCandidateFromCache(cachedData, candidateName) {
+        if (!cachedData || !candidateName) return null;
+
+        return cachedData.find(candidate =>
+            candidate.geekCard && candidate.geekCard.geekName.toLowerCase().includes(candidateName.toLowerCase())
+        );
+    }
+
     //提取信息
-    extractCandidates(elements = null) {
-
-        const candidates = [];
-        let items;
-
+    async extractCandidates(elements = null) {
         try {
-            if (elements) {
-                items = elements;
-            } else {
-                items = this.findElements();
+            const candidates = [];
+            let items = elements || await this.findElements();
 
-                if (items.length === 0) {
-                    // 输出更多调试信息
+            if (!items || items.length === 0) {
+                console.warn('未找到任何候选人元素');
+                return [];
+            }
 
+            // 异步获取缓存数据
+            const cachedData = await this.getCachedCandidateData();
 
-                    // 修改 class 列表的获取方式
-                    const allClasses = Array.from(document.querySelectorAll('*'))
-                        .map(el => {
-                            if (el instanceof SVGElement) {
-                                return el.className.baseVal;
-                            }
-                            return el.className;
-                        })
-                        .filter(className => {
-                            return className && typeof className === 'string' && className.trim() !== '';
-                        });
+            // 使用for循环顺序处理元素，确保所有异步操作完成
+            for (const item of Array.from(items)) {
+                try {
+                    // this.highlightElement(item, 'processing');
 
-                    //console.log('页面上所有的 class:', allClasses.join('\n'));
-                    throw new Error('未找到任何元素，请检查选择器是否正确');
+                    // 提取候选人姓名
+                    const nameElement = await this.findNameElement(item);
+                    const candidateName = nameElement?.textContent?.trim() || '';
+                    if (!candidateName) {
+                        this.clearHighlight(item);
+                        continue;
+                    }
+                    console.log("查找:" + candidateName);
+
+                    // 查找缓存或创建新候选人
+                    const candidate = await this.processCandidate(item, candidateName, cachedData);
+                    if (candidate) {
+                        candidates.push(candidate);
+                        // this.highlightElement(item, 'matched');
+                    }
+
+                } catch (error) {
+                    console.error('处理候选人元素失败:', error);
+                    this.clearHighlight(item);
                 }
             }
 
-
-            Array.from(items).forEach((item, index) => {
-                this.highlightElement(item, 'processing');
-
-                try {
-                    // 使用多种方式查找子元素
-                    const findElement = (fullClass, partialClass) => {
-                        //partialClass 可能是数组
-                        if (Array.isArray(partialClass)) {
-                            for (const className of partialClass) {
-                                const element = item.getElementsByClassName(className)[0] ||
-                                    item.querySelector(`[class*="${className}"]`);
-                                if (element) {
-                                    return element;
-                                }
-                            }
-                        } else {
-                            return item.getElementsByClassName(fullClass)[0] ||
-                                item.getElementsByClassName(partialClass)[0] ||
-                                item.querySelector(`[class*="${partialClass}"]`);
-                        }
-                    };
-
-                    const nameElement = findElement(this.fullClasses.name, this.selectors.name);
-                    const ageElement = findElement(this.fullClasses.age, this.selectors.age);
-
-                    console.log(ageElement);
-
-                    const educationElement = findElement(this.fullClasses.education, this.selectors.education);
-                    const universityElement = findElement(this.fullClasses.university, this.selectors.university);
-                    const descriptionElement = findElement(this.fullClasses.description, this.selectors.description);
-                    let activeTextElement = findElement(this.fullClasses.activeText, this.selectors.activeText);
-
-
-
-                    if (!activeTextElement) {
-
-                        let onlineMarker = findElement('online-marker', 'online-marker');
-                        if (onlineMarker) {
-                            activeTextElement = "在线";
-                        } else {
-                            activeTextElement = "离线";
-                        }
-
-                    } else {
-                        activeTextElement = activeTextElement.textContent?.trim() || "";
-                    }
-
-                    const extraInfo = this.extractExtraInfo(item, this.selectors.extraSelectors);
-
-                    const candidate = {
-                        name: nameElement?.textContent?.trim() || '',
-                        age: this.extractAge(ageElement?.textContent),
-                        education: educationElement?.textContent?.trim() || '',
-                        university: universityElement?.textContent?.trim() || '',
-                        description: descriptionElement?.textContent?.trim() || '',
-                        activeText: activeTextElement,
-                        extraInfo: extraInfo
-                    };
-
-
-                    if (candidate.name) {
-                        candidates.push(candidate);
-                        this.highlightElement(item, 'matched');
-                    } else {
-                        this.clearHighlight(item);
-                    }
-                } catch (error) {
-                    console.error(`处理第 ${index + 1} 个元素时出错:`, error);
-                    this.clearHighlight(item);
-                }
-            });
+            return candidates;
 
         } catch (error) {
-            console.error('提取信息失败:', error);
-            throw error;
+            console.error('提取候选人失败:', error);
+            return []; // 出错时返回空数组
         }
+    }
 
-        console.log('提取到的候选人信息:', candidates);
+    // 查找元素方法
+    findElement(fullClass, partialClass) {
+        return (item) => {
+            if (Array.isArray(partialClass)) {
+                for (const className of partialClass) {
+                    const element = item.getElementsByClassName(className)[0] ||
+                        item.querySelector(`[class*="${className}"]`);
+                    if (element) return element;
+                }
+            } else {
+                return item.getElementsByClassName(fullClass)[0] ||
+                    item.getElementsByClassName(partialClass)[0] ||
+                    item.querySelector(`[class*="${partialClass}"]`);
+            }
+            return null;
+        };
+    }
 
-        return candidates;
+    // 辅助方法：查找姓名元素
+    async findNameElement(item) {
+        return this.findElement(this.fullClasses.name, this.selectors.name)(item);
+    }
+
+    // 辅助方法：处理单个候选人
+    // 从页面更新候选人信息
+    async updateCandidateFromPage(candidate, item) {
+        try {
+            // 获取页面上的实时状态
+            const pageActiveText = await this.findElement(this.fullClasses.activeText, this.selectors.activeText)(item)
+                ?.textContent?.trim() || "离线";
+
+            if (pageActiveText && pageActiveText !== "离线") {
+                candidate.activeText = pageActiveText;
+            }
+            return candidate;
+        } catch (error) {
+            console.error('更新候选人页面信息失败:', error);
+            return candidate;
+        }
+    }
+
+    // 创建新候选人
+    async createNewCandidate(item, candidateName) {
+        try {
+            return {
+                name: candidateName,
+                age: this.extractAge(await this.findElement(this.fullClasses.age, this.selectors.age)(item)?.textContent),
+                education: await this.findElement(this.fullClasses.education, this.selectors.education)(item)?.textContent?.trim() || '',
+                university: await this.findElement(this.fullClasses.university, this.selectors.university)(item)?.textContent?.trim() || '',
+                description: await this.findElement(this.fullClasses.description, this.selectors.description)(item)?.textContent?.trim() || '',
+                activeText: await this.getActiveText(item),
+                extraInfo: await this.extractExtraInfo(item, this.selectors.extraSelectors),
+                timestamp: Date.now()
+            };
+        } catch (error) {
+            console.error('创建新候选人失败:', error);
+            return null;
+        }
+    }
+
+    async processCandidate(item, candidateName, cachedData) {
+        const cachedCandidate = this.findCandidateFromCache(cachedData, candidateName);
+        if (cachedCandidate) {
+            // console.log(`使用缓存数据: ${candidateName}`);
+            // return this.updateCandidateFromPage(cachedCandidate, item);
+            return cachedCandidate;
+        }
+        return this.createNewCandidate(item, candidateName);
+    }
+
+    // 获取在线状态文本
+    getActiveText(item) {
+        let activeTextElement = findElement(this.fullClasses.activeText, this.selectors.activeText);
+        if (!activeTextElement) {
+            let onlineMarker = findElement('online-marker', 'online-marker');
+            return onlineMarker ? "在线" : "离线";
+        }
+        return activeTextElement.textContent?.trim() || "离线";
     }
 
     extractAge(text) {
@@ -198,7 +310,7 @@ class BossParser extends BaseParser {
 
     clickMatchedItem(element) {
 
-        console.log('打招呼:', element);
+        // console.log('打招呼:', element);
         try {
             let clickElement = null;
             // 使用多种方式查找点击目标
@@ -255,7 +367,7 @@ class BossParser extends BaseParser {
             //console.log(detailLink);
             if (detailLink) {
                 detailLink.click();
-                console.log('点击候选人详情成功');
+                // console.log('点击候选人详情成功');
 
                 return true;
             } else {
@@ -269,16 +381,9 @@ class BossParser extends BaseParser {
         }
     }
 
-    // Boss平台特定的简历OCR识别（继承基类方法）
-    async findAndOCRCanvas(element) {
-        // 调用基类的通用OCR方法，指定canvas ID为'resume'
-        return await super.findAndOCRCanvas(element, 'resume');
-    }
-
     // 实现关闭详情方法
     async closeDetail(maxRetries = 3) {
         try {
-            let hasClosedAny = false;
 
             // 递归深度限制，避免无限循环
             if (maxRetries <= 0) {
@@ -287,50 +392,19 @@ class BossParser extends BaseParser {
                 return false;
             }
 
-
-            document.addEventListener('DOMContentLoaded', () => {
-                console.log('DOM已加载:', document.documentElement);
-            });
-
-
-
-
-            console.log('当前文档标题:', document.title);
-            console.log('当前URL:', document.location.href);
-            console.log(document.documentElement); // 会显示 <html> 元素
-            console.log(document.toString()); // 会显示 <html> 元素
-
-
             // 尝试多种关闭方式
             for (const className of this.detailSelectors.closeButton) {
                 const closeElements = document.getElementsByClassName(className);
-                console.log(closeElements);
                 if (closeElements.length > 0) {
                     closeElements[0].click();
-                    console.log(`使用class ${className} 关闭详情成功`);
-                    hasClosedAny = true;
-
                     // 等待DOM更新
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
-
-                let aaaa = document.querySelector(`.${className}`);
-                console.log(aaaa);
-
-
             }
 
-
-
-            // 如果没有找到任何可关闭的元素
-            if (!hasClosedAny) {
-                console.warn('没有找到可关闭的弹框元素');
-                alert("Goodhr提醒您: 候选人弹框关闭失败，请暂停使用并联系作者处理");
-                return false;
-            }
 
             // 检查是否还有未关闭的弹框
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 500));
             const stillHasModals = this.checkForRemainingModals();
 
             if (stillHasModals) {
@@ -338,7 +412,6 @@ class BossParser extends BaseParser {
                 return await this.closeDetail(maxRetries - 1);
             }
 
-            console.log('所有弹框已成功关闭');
             return true;
 
         } catch (error) {
@@ -385,17 +458,66 @@ class BossParser extends BaseParser {
         }
     }
 
-    // Boss平台特定的测试OCR功能方法
-    async testOCRFunction() {
-        // 调用基类的测试方法，指定canvas ID为'resume'
-        return await super.testOCRFunction('resume');
-    }
+    // 获取候选人简单信息（用于AI决策）
+    getSimpleCandidateInfo(candidate) {
+        if (!candidate) return '候选人信息为空';
 
-    // Boss平台查找任意canvas的OCR识别方法
-    async findAnyCanvasAndOCR(element) {
-        // 调用基类的通用canvas查找方法
-        return await super.findAnyCanvasAndOCR(element);
+        const info = [];
+
+        // 基本信息
+        if (candidate.geekCard) {
+            const gc = candidate.geekCard;
+            info.push(`姓名: ${gc.geekName || '未知'}`);
+            info.push(`年龄: ${gc.ageDesc || '未知'}`);
+            info.push(`学历: ${gc.geekDegree || '未知'}`);
+            info.push(`毕业院校: ${gc.geekEdu?.school || '未知'}`);
+            info.push(`专业: ${gc.geekEdu?.major || '未知'}`);
+            info.push(`工作年限: ${gc.geekWorkYear || '未知'}`);
+            info.push(`当前状态: ${gc.applyStatusDesc || '未知'}`);
+            info.push(`期望薪资: ${gc.salary || '未知'}`);
+            info.push(`期望职位: ${gc.expectPositionName || '未知'}`);
+            info.push(`期望地点: ${gc.expectLocationName || '未知'}`);
+
+            if (gc.geekDesc?.content) {
+                info.push(`自我介绍: ${gc.geekDesc.content}`);
+            }
+        }
+
+        // 工作经历
+        if (candidate.geekCard.geekWorks?.length > 0) {
+            info.push('\n工作经历:');
+            candidate.geekCard.geekWorks.forEach(work => {
+                info.push(`- ${work.company || '未知公司'} · ${work.positionName || '未知职位'}`);
+                info.push(`  时间: ${work.startDate} 至 ${work.endDate || '至今'}`);
+                info.push(`  职责: ${work.responsibility || '无描述'}`);
+                //工作时长 workTime
+                info.push(`  工作时长: ${work.workTime || '无描述'}`);
+                info.push(`  关键词: ${work.workEmphasisList || '无描述'}`);
+            });
+        }
+
+        // 教育经历
+        if (candidate.geekCard.geekEdus?.length > 0) {
+            info.push('\n教育经历:');
+            candidate.geekCard.geekEdus.forEach(edu => {
+                info.push(`- ${edu.school || '未知学校'} · ${edu.major || '未知专业'}`);
+                info.push(`  学历: ${edu.degreeName || '未知'} (${edu.startDate} 至 ${edu.endDate})`);
+            });
+        }
+
+        // 其他信息
+        info.push(`\n最后活跃: ${candidate.activeTimeDesc || '未知'}`);
+        info.push(`当前日期: ${new Date().toLocaleDateString()}`);
+
+        return info.join('\n');
+
     }
 }
+
+
+
+
+
+
 
 export { BossParser };

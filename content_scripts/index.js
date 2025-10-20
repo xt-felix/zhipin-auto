@@ -1,4 +1,4 @@
-// OCR功能已迁移到服务器端，不再需要客户端加载OCR库
+
 
 let currentParser = null;
 let scrollInterval = null;
@@ -11,6 +11,8 @@ let scrollDelayMax = 6000;
 let port = null;
 let matchCount = 0;
 let currentPrompt = null;
+
+let ParserName = null
 
 // 显示提示信息
 function showNotification(message, type = 'status') {
@@ -61,13 +63,15 @@ function showNotification(message, type = 'status') {
 // 根据当前网站URL选择合适的解析器
 async function initializeParser() {
     try {
-        // OCR功能已迁移到服务器端，不再需要预加载客户端OCR库
+
 
         const url = window.location.href;
         console.log('当前URL:', url);
         const extensionUrl = chrome.runtime.getURL('');
 
         if (url.includes('zhipin.com')) {
+            ParserName = 'boos'
+
             const { BossParser } = await import(extensionUrl + 'content_scripts/sites/boss.js');
             currentParser = new BossParser();
             // showNotification('BOSS直聘初始化完成，请前往推荐牛人页面使用-GoodHR', 'status');
@@ -83,16 +87,20 @@ async function initializeParser() {
 
 
         } else if (url.includes('lagou.com')) {
+            ParserName = 'lagou'
             const { LagouParser } = await import(extensionUrl + 'content_scripts/sites/lagou.js');
             currentParser = new LagouParser();
             // showNotification('拉勾网初始化完成-GoodHR', 'status');
             createDraggablePrompt();
         } else if (url.includes('liepin.com')) {
+            ParserName = 'liepin'
             const { LiepinParser } = await import(extensionUrl + 'content_scripts/sites/liepin.js');
             currentParser = new LiepinParser();
             // showNotification('猎聘网初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
             createDraggablePrompt();
         } else if (url.includes('zhaopin.com')) {
+
+            ParserName = 'zhilian'
             const { ZhilianParser } = await import(extensionUrl + 'content_scripts/sites/zhilian.js');
             currentParser = new ZhilianParser();
             // showNotification('智联网初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
@@ -171,7 +179,7 @@ function getAllDocuments() {
 // 修改自动滚动功能
 async function startAutoScroll() {
 
-    console.log('开始自动滚动');
+    // console.log('开始自动滚动');
 
 
 
@@ -217,23 +225,23 @@ async function startAutoScroll() {
             matchLimit = currentParser?.aiSettings?.matchLimit || 200;
             scrollDelayMin = currentParser?.aiSettings?.scrollDelayMin || 3;
             scrollDelayMax = currentParser?.aiSettings?.scrollDelayMax || 5;
-            console.log('AI模式设置:', {
-                matchLimit,
-                scrollDelayMin,
-                scrollDelayMax,
-                aiSettings: currentParser.aiSettings
-            });
+            // console.log('AI模式设置:', {
+            //     matchLimit,
+            //     scrollDelayMin,
+            //     scrollDelayMax,
+            //     aiSettings: currentParser.aiSettings
+            // });
         } else {
             // 免费模式：使用原有设置
             matchLimit = currentParser?.filterSettings?.matchLimit || 200;
             scrollDelayMin = currentParser?.filterSettings?.scrollDelayMin || 3;
             scrollDelayMax = currentParser?.filterSettings?.scrollDelayMax || 5;
-            console.log('免费模式设置:', {
-                matchLimit,
-                scrollDelayMin,
-                scrollDelayMax,
-                filterSettings: currentParser.filterSettings
-            });
+            // console.log('免费模式设置:', {
+            //     matchLimit,
+            //     scrollDelayMin,
+            //     scrollDelayMax,
+            //     filterSettings: currentParser.filterSettings
+            // });
         }
 
         window.scrollTo(0, 0);
@@ -380,6 +388,57 @@ async function executeScroll() {
     }
 }
 
+
+// 添加高亮原因标签函数
+function addHighlightReason(element, reason, color) {
+
+
+    // 移除旧的原因标签
+    element.querySelector('.goodhr-highlight-reason')?.remove();
+
+    const reasonEl = document.createElement('div');
+    reasonEl.className = 'goodhr-highlight-reason';
+    reasonEl.textContent = reason;
+    reasonEl.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                background-color: ${color};
+                color: white;
+                padding: 1px 12px;
+                font-size: 12px;
+                border-bottom-right-radius: 8px;
+                z-index: 1;
+            `;
+    element.style.position = 'relative';
+    element.appendChild(reasonEl);
+
+
+    // 根据状态设置不同高亮
+    if (reason.includes("已打招呼")) {
+        // 已打招呼状态（绿色）
+        const contactedStyles = {
+            'background-color': '#e8f5e9',
+            'border': '2px solid #4caf50',
+            'box-shadow': '0 0 10px rgba(76, 175, 80, 0.3)'
+        };
+        Object.entries(contactedStyles).forEach(([property, value]) => {
+            element.style.setProperty(property, value, 'important');
+        });
+    } else {
+        // 未打招呼状态（灰色）
+        const notContactedStyles = {
+            'background-color': '#f5f5f5',
+            'border': '2px solid #9e9e9e',
+            'box-shadow': '0 0 10px rgba(158, 158, 158, 0.3)'
+        };
+        Object.entries(notContactedStyles).forEach(([property, value]) => {
+            element.style.setProperty(property, value, 'important');
+        });
+    }
+}
+
+
 // 处理单个元素的函数
 async function processElement(element, doc) {
     try {
@@ -391,12 +450,12 @@ async function processElement(element, doc) {
                 'Content-Type': 'application/json'
             }
         }).catch(err => {
-            console.log('计数请求失败:', err);
+            // console.log('计数请求失败:', err);
         });
 
         // 首先检查是否已达到匹配限制
         if (matchCount >= matchLimit) {
-            console.log(`已达到匹配限制 ${matchLimit}，停止处理`);
+            // console.log(`已达到匹配限制 ${matchLimit}，停止处理`);
             isRunning = false;
             stopAutoScroll();
             return;
@@ -414,29 +473,35 @@ async function processElement(element, doc) {
         // 先清除之前的样式
         targetElement.removeAttribute('style');
 
-        // 直接应用样式到目标元素
-        const styles = {
-            'background-color': '#fff3e0',
-            'border': '2px solid #ffa726',
-            'position': 'relative',
-            'box-shadow': '0 0 15px rgba(255, 167, 38, 0.4)',
-            'transition': 'all 0.3s ease'
-        };
+        // 清除之前的高亮和原因标签
+        targetElement.querySelector('.goodhr-highlight-reason')?.remove();
 
-        Object.entries(styles).forEach(([property, value]) => {
-            targetElement.style.setProperty(property, value, 'important');
-        });
+        // 应用处理中样式（橙色）
+        // const processingStyles = {
+        //     'background-color': '#fff3e0',
+        //     'border': '2px solid #ffa726',
+        //     'position': 'relative',
+        //     'box-shadow': '0 0 15px rgba(255, 167, 38, 0.4)',
+        //     'transition': 'all 0.3s ease'
+        // };
+
+        // Object.entries(processingStyles).forEach(([property, value]) => {
+        //     targetElement.style.setProperty(property, value, 'important');
+        // });
 
         const rect = element.getBoundingClientRect();
         lastProcessedPosition = rect.top + rect.height + (doc === document ?
             window.pageYOffset :
             doc.defaultView.pageYOffset);
 
-        const candidates = currentParser.extractCandidates([element]);
-        if (candidates.length > 0) {
-            for (const candidate of candidates) {
+        const candidates = await currentParser.extractCandidates([element]);
 
+        const resolvedCandidates = candidates;
+        if (resolvedCandidates.length > 0) {
+            for (let candidate of candidates) {
 
+                let AiMsg = ""
+                let simpleCandidateInfo = null
                 // 再次检查是否已达到匹配限制
                 if (matchCount >= matchLimit) {
                     console.log(`处理候选人过程中达到匹配限制 ${matchLimit}，停止处理`);
@@ -449,13 +514,18 @@ async function processElement(element, doc) {
 
                 // 第一个决策点：决定是否查看候选人详细信息
                 let clickCandidate = false;
+                simpleCandidateInfo = await currentParser.getSimpleCandidateInfo(candidate);
 
                 if (currentParser.aiMode) {
                     // AI模式：基于简单信息决定是否查看详细信息
-                    const simpleCandidateInfo = await getSimpleCandidateInfo(candidate);
-                    clickCandidate = await performAIClickDecision(simpleCandidateInfo);
-                    console.log("AI决策是否查看详情结果:" + clickCandidate);
 
+
+                    let { isok, msg } = await performAIClickDecision(simpleCandidateInfo);
+                    AiMsg = msg
+                    clickCandidate = isok;
+                    if (clickCandidate) {
+
+                    }
                 } else {
                     // 免费模式：通过概率决定
                     clickCandidate = currentParser.shouldClickCandidate();
@@ -463,9 +533,6 @@ async function processElement(element, doc) {
 
                 // 判断是否应该联系候选人
                 let shouldContact = false;
-
-                console.log("是否点击候选人" + clickCandidate);
-
                 if (clickCandidate) {
                     // 检查是否有打开的候选人页面
                     const maxWaitTime = 10000; // 最大等待时间10秒
@@ -478,57 +545,44 @@ async function processElement(element, doc) {
                         shouldSkipDelay = true;
                         await randomDelay(`查看候选人详细信息: ${candidate.name}`);
 
-                        //查询候选人详细信息
-                        let detail = null
-                        let highPrecision = false;
-                        try {
-                            highPrecision = currentParser.aiSettings.highPrecision == null ? false : currentParser.aiSettings.highPrecision == true ? true : false
-
-                        } catch (error) {
-                            highPrecision = false
-
-                        }
-
-
-
-                        //用户是否打开高精度 功能
-                        if (highPrecision) {
-                            detail = await currentParser.findAndOCRCanvas(element);
-                        }
-
-
                         let colleagueContactedInfo = null;
                         try {
                             //查询同事沟通过候选人的信息
                             colleagueContactedInfo = await currentParser.queryColleagueContactedInfo(candidate);
-                            candidate.colleagueContactedInfo = colleagueContactedInfo;
+                            simpleCandidateInfo += colleagueContactedInfo;
 
                         } catch (error) {
                             console.error('查询同事沟通过候选人的信息失败:', error);
                         }
 
-                        try {
-                            if (detail != null) {
-                                candidate.extraInfo.push({ type: "工作经历", value: detail.text });
-                            }
-
-                        } catch (error) {
-                            console.error('查询同事沟通过候选人的信息失败:', error);
-                        }
+                        // console.log(candidate);
 
 
                         // AI模式：使用AI筛选
                         if (currentParser.aiMode) {
-                            const candidateInfo = await getCandidateInfo(candidate);
-                            console.log("最终数据");
-                            console.log(candidate);
-                            shouldContact = await performAIFilter(candidateInfo);
-                            console.log("AI决策是否打招呼结果:" + shouldContact);
+
+                            // 如果是Boss且第一次AI决策为true，直接打招呼
+                            if (ParserName == "boos") {
+                                if (clickCandidate) {
+                                    shouldContact = true;
+                                } else {
+                                    shouldContact = false
+                                    //不做任何处理，继续下一个候选人
+                                }
+
+                            } else {
+
+                                const candidateInfo = await getCandidateInfo(candidate);
+                                // console.log(candidate);
+                                let { isok, msg } = {} = await performAIFilter(candidateInfo);
+                                shouldContact = isok;
+                            }
+
 
                         } else {
                             // 免费模式：使用关键词筛选
-                            console.log('使用关键词筛选候选人:', candidate.name);
-                            shouldContact = currentParser.filterCandidate(candidate);
+                            // console.log('使用关键词筛选候选人:', simpleCandidateInfo);
+                            shouldContact = currentParser.filterCandidate(simpleCandidateInfo);
                         }
 
                         // 确保详情页完全关闭
@@ -538,12 +592,12 @@ async function processElement(element, doc) {
                         await new Promise(resolve => setTimeout(resolve, 500));
                     }
                 } else {
-                    console.log('不查看候选人详细信息:', candidate.name);
-                    await randomDelay("不查看候选人详细信息");
+                    // console.log('不查看候选人详细信息:', candidate.name);
+                    // await randomDelay("不查看候选人详细信息");
 
                     // 如果不查看详情，直接使用关键词筛选
                     if (!currentParser.aiMode) {
-                        console.log('使用关键词筛选候选人:', candidate.name);
+                        // console.log('使用关键词筛选候选人:', candidate.name);
                         shouldContact = currentParser.filterCandidate(candidate);
                     }
                 }
@@ -557,17 +611,7 @@ async function processElement(element, doc) {
                         return;
                     }
 
-                    console.log('信息匹配:', candidate.name);
-                    const matchStyles = {
-                        'background-color': '#e8f5e9',
-                        'border': '2px solid rgb(115, 172, 117)',
-                        'box-shadow': '0 0 10px rgba(102, 180, 104, 0.3)'
-                    };
-
-                    Object.entries(matchStyles).forEach(([property, value]) => {
-                        targetElement.style.setProperty(property, value, 'important');
-                    });
-                    console.log('开始打招呼:', candidate.name);
+                    addHighlightReason(targetElement, '已打招呼(' + AiMsg + ')', '#4caf50');
 
                     const clicked = currentParser.clickMatchedItem(element);
                     if (clicked) {
@@ -603,20 +647,68 @@ async function processElement(element, doc) {
                         return;
                     }
                 } else {
-                    console.log('信息不匹配:', candidate.name);
-                    targetElement.removeAttribute('style');
+                    addHighlightReason(targetElement, '未打招呼(' + AiMsg + ')', '#9e9e9e');
                 }
             }
         }
 
-        // 5秒后移除样式
-        setTimeout(() => {
-            targetElement.removeAttribute('style');
-        }, 5000);
+
 
     } catch (error) {
         console.error('处理元素失败:', error);
         element.removeAttribute('style');
+    }
+}
+
+
+// 处理单个元素的函数
+async function playNotificationSound() {
+    try {
+        // 确保音频文件存在
+        const audioUrl = chrome.runtime.getURL('sounds/notification2.mp3');
+        const audio = new Audio(audioUrl);
+
+        // 预加载音频
+        audio.preload = 'auto';
+        audio.volume = 0.5;
+
+        // 检查用户是否与页面有过交互
+        const hasUserInteracted = document.visibilityState === 'visible' &&
+            (document.hasFocus() || document.activeElement);
+
+        if (hasUserInteracted) {
+            // 用户已交互，可以直接播放
+            audio.play().catch(error => {
+                console.error('直接播放失败:', error);
+                // 尝试通过用户交互事件触发
+                document.body.addEventListener('click', function handleClick() {
+                    audio.play().finally(() => {
+                        document.body.removeEventListener('click', handleClick);
+                    });
+                }, { once: true });
+            });
+        } else {
+            // 未交互，通过虚拟点击事件触发
+            const clickEvent = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: true
+            });
+            document.dispatchEvent(clickEvent);
+
+            audio.play().catch(error => {
+                console.error('虚拟点击播放失败:', error);
+            });
+        }
+
+        // 5秒后自动清理音频对象
+        setTimeout(() => {
+            audio.pause();
+            audio.removeAttribute('src');
+            audio.load();
+        }, 5000);
+    } catch (error) {
+        console.error('初始化音频失败:', error);
     }
 }
 
@@ -625,7 +717,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     try {
         switch (message.action) {
             case 'START_SCROLL':
-                console.log('收到开始滚动消息:', message);
+                // console.log('收到开始滚动消息:', message);
 
                 // 检查解析器是否已初始化
                 if (!currentParser) {
@@ -637,7 +729,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                 // 更新点击频率设置
                 if (message.data.clickFrequency !== undefined) {
                     currentParser.clickCandidateConfig.frequency = message.data.clickFrequency;
-                    console.log('更新点击频率为:', message.data.clickFrequency);
+                    // console.log('更新点击频率为:', message.data.clickFrequency);
                 }
 
                 // 更新其他设置
@@ -657,8 +749,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                 sendResponse({ status: 'success' });
                 break;
             case 'START_AI_SCROLL':
-                console.log('收到开始AI滚动消息:', message);
-                console.log('AI消息数据:', message.data);
+                // console.log('收到开始AI滚动消息:', message);
+                // console.log('AI消息数据:', message.data);
 
                 // 检查解析器是否已初始化
                 if (!currentParser) {
@@ -670,7 +762,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                 // 更新AI设置
                 if (message.data.clickFrequency !== undefined) {
                     currentParser.clickCandidateConfig.frequency = message.data.clickFrequency;
-                    console.log('更新点击频率为:', message.data.clickFrequency);
+                    // console.log('更新点击频率为:', message.data.clickFrequency);
                 }
 
                 // 设置AI筛选模式
@@ -685,10 +777,10 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                     enableSound: message.data.enableSound
                 };
 
-                console.log('设置AI模式:', {
-                    aiMode: currentParser.aiMode,
-                    aiSettings: currentParser.aiSettings
-                });
+                // console.log('设置AI模式:', {
+                //     aiMode: currentParser.aiMode,
+                //     aiSettings: currentParser.aiSettings
+                // });
 
                 // 直接使用原有的滚动逻辑
                 await startAutoScroll();
@@ -890,38 +982,7 @@ async function sendDirectAIRequest(prompt, aiConfig) {
     }
 }
 
-// 获取候选人简单信息（用于第一个决策点）
-async function getSimpleCandidateInfo(candidate) {
-    console.log('构建候选人基础信息:', candidate);
-    let info = `姓名: ${candidate.name || '未知'}`;
 
-    if (candidate.age) {
-        info += `\n年龄: ${candidate.age}`;
-    }
-
-    if (candidate.education) {
-        info += `\n学历: ${candidate.education}`;
-    }
-
-    if (candidate.university) {
-        info += `\n学校: ${candidate.university}`;
-    }
-
-    if (candidate.extraInfo && candidate.extraInfo.length > 0) {
-        const extraInfoText = candidate.extraInfo
-            .map(info => `${info.type}: ${info.value}`)
-            .join('\n');
-        info += `\n其他信息:\n${extraInfoText}`;
-    }
-    if (candidate.activeText) {
-        info += `\n在线状态: ${candidate.activeText}`;
-    }
-
-    //当前日期
-    info += `\n当前日期: ${new Date().toLocaleDateString()}`;
-
-    return info;
-}
 
 // 检查AI是否过期
 function checkAIExpiration() {
@@ -956,7 +1017,6 @@ async function performAIClickDecision(simpleCandidateInfo) {
         const prompt = buildAIClickPrompt(simpleCandidateInfo);
         const result = await sendDirectAIRequest(prompt, currentParser.aiSettings.aiConfig);
 
-        // 隐藏AI决策动画
         hideAIDecisionModal();
 
         if (result.success) {
@@ -991,10 +1051,7 @@ function buildAIClickPrompt(simpleCandidateInfo) {
 2. 请根据岗位要求判断是否值得查看这位候选人的详细信息。
 3. 必须返回JSON格式，包含decision和reason两个字段。
 4. decision字段只能是"是"或"否"。
-5. reason字段是决策原因，10个字以内。
-6. 目前仅有一些非常基础的信息。如果你不能明确的判断出他不符合。那就应该返回是。
-7. 目前仅有一些非常基础的信息。判断时请更宽松一些。
-8. 如果岗位与候选人之前有一点关联，请返回是。
+5. reason字段是决策原因，15个字以内。
 
 岗位要求：
 ${currentParser.aiSettings?.jobDescription || '未设置岗位要求'}
@@ -1002,7 +1059,8 @@ ${currentParser.aiSettings?.jobDescription || '未设置岗位要求'}
 候选人基本信息：
 ${simpleCandidateInfo}
 
-请判断是否值得查看这位候选人的详细信息，返回JSON格式：{"decision":"是","reason":"符合基本要求"}`;
+请判断是否值得查看这位候选人的详细信息。
+返回JSON格式：{"decision":"是","reason":"符合基本要求"}`;
 }
 
 // 构建AI提示词（用于第二个决策点）
@@ -1054,7 +1112,10 @@ function parseAIResponse(response) {
                 }
             });
 
-            return decision;
+            return {
+                isok: decision,
+                msg: reason
+            };
         }
     } catch (error) {
         console.warn('解析JSON失败:', error);
@@ -1066,13 +1127,16 @@ function parseAIResponse(response) {
                 type: 'error'
             }
         });
-        return false;
+        return {
+            isok: false,
+            msg: '解析失败'
+        };
     }
 
     // 兼容旧格式
     const cleanResponse = response.trim().toLowerCase();
     if (cleanResponse.includes('是') || cleanResponse.includes('yes')) {
-        console.log("决策结果 :是");
+        // console.log("决策结果 :是");
         sendMessage({
             type: 'LOG_MESSAGE',
             data: {
@@ -1082,7 +1146,7 @@ function parseAIResponse(response) {
         });
         return true;
     } else if (cleanResponse.includes('否') || cleanResponse.includes('no')) {
-        console.log("决策结果 :否");
+        // console.log("决策结果 :否");
         sendMessage({
             type: 'LOG_MESSAGE',
             data: {
@@ -1495,7 +1559,7 @@ try {
 document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
         // 窗口被隐藏（可能是最小化、切换标签页等）
-        console.log('窗口状态变为隐藏');
+        // console.log('窗口状态变为隐藏');
 
         // 检查是否真的是最小化（而不是切换标签页）
         setTimeout(() => {
@@ -1508,7 +1572,7 @@ document.addEventListener('visibilitychange', function () {
         }, 100);
     } else {
         // 窗口变为可见
-        console.log('窗口状态变为可见');
+        // console.log('窗口状态变为可见');
     }
 });
 

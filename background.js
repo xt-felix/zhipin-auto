@@ -6,6 +6,8 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
     console.log('Service Worker 已激活');
+    //测试
+
     event.waitUntil(self.clients.claim());
 });
 

@@ -32,8 +32,8 @@ let aiExpireTime = null;
 let currentTab = 'free'; // 当前选中的选项卡
 let aiConfig = {
 	token: '',
-	model: 'Qwen/Qwen2.5-7B-Instruct',
-	highPrecision: false, // 高精度OCR功能，默认关闭
+	model: 'deepseek-ai/DeepSeek-V3',
+
 	clickPrompt: `你是一个资深的HR专家。请根据候选人的基本信息判断是否值得查看其详细信息。
 
 重要提示：
@@ -42,9 +42,7 @@ let aiConfig = {
 3. 必须返回JSON格式，包含decision和reason两个字段。
 4. decision字段只能是"是"或"否"。
 5. reason字段是决策原因，10个字以内。
-6. 目前仅有一些非常基础的信息。如果你不能明确的判断出他不符合。那就应该返回是。
-7. 目前仅有一些非常基础的信息。判断时请更宽松一些。
-8. 如果岗位与候选人之前有一点关联，请返回是。
+6. 如果岗位与候选人之前有一点关联，请返回是。
 
 岗位要求：
 \${岗位信息}
@@ -687,16 +685,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		// 监听点击频率变化
 		clickFrequencyInput?.addEventListener('change', saveSettings);
 
-		// 监听高精度复选框变化
-		const highPrecisionCheckbox = document.getElementById('ai-high-precision');
-		if (highPrecisionCheckbox) {
-			highPrecisionCheckbox.checked = aiConfig.highPrecision;
-			highPrecisionCheckbox.addEventListener('change', (e) => {
-				aiConfig.highPrecision = e.target.checked;
-				saveAIConfig();
-				addLog(`高精度OCR功能: ${aiConfig.highPrecision ? '已开启' : '已关闭'}`, 'info');
-			});
-		}
+
 
 
 
@@ -1064,7 +1053,9 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 
 		// 播放提示音
 		if (enableSound) {
-			playNotificationSound();
+			const audio = new Audio(chrome.runtime.getURL('sounds/notification2.mp3'));
+			audio.volume = 0.5; // 设置音量
+			audio.play().catch(error => console.error('播放提示音失败:', error));
 		}
 
 		// 检查是否达到匹配限制
@@ -1073,9 +1064,9 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 			addLog(`已达到设定的打招呼数量 ${matchLimit}，自动停止`, 'warning');
 			// 播放特殊的完成提示音
 			if (enableSound) {
-				playNotificationSound();
-				// 连续播放两次以示区分
-				setTimeout(() => playNotificationSound(), 500);
+				const audio = new Audio(chrome.runtime.getURL('sounds/error.mp3'));
+				audio.volume = 0.5; // 设置音量
+				audio.play().catch(error => console.error('播放提示音失败:', error));				// 连续播放两次以示区分
 			}
 		}
 
@@ -1724,7 +1715,7 @@ async function syncSettingsToServer() {
 }
 
 // AI相关函数
-function switchTab(tabName) {
+async function switchTab(tabName) {
 	currentTab = tabName;
 
 	// 更新选项卡样式
@@ -1752,7 +1743,7 @@ function switchTab(tabName) {
 		updateJobDescription();
 		// 更新AI到期时间显示
 		updateAIExpireDisplay();
-		
+
 		// 检查API余额（仅在有token时检查）
 		if (aiConfig.token) {
 			handleBalanceCheck();
@@ -1769,12 +1760,66 @@ function switchTab(tabName) {
 		if (jobDescriptionGroup) {
 			jobDescriptionGroup.style.display = 'none';
 		}
-		
+
 		// 隐藏余额显示
 		hideBalanceDisplay();
 	}
 
+	// 保存当前选择的版本
+	await chrome.storage.local.set({ 'selected_tab': tabName });
 	addLog(`切换到${tabName === 'ai' ? 'AI高级版' : '免费版'}`, 'info');
+}
+
+// 在DOMContentLoaded事件中添加加载保存的版本和岗位
+document.addEventListener('DOMContentLoaded', async () => {
+	// ...其他现有代码...
+
+	// 加载保存的版本选择
+	const savedTab = await chrome.storage.local.get('selected_tab');
+	if (savedTab.selected_tab) {
+		switchTab(savedTab.selected_tab);
+	}
+
+	// 加载保存的岗位选择
+	const settings = await getSettings();
+	if (settings.currentPosition) {
+		// 确保positions已加载后再尝试选择岗位
+		await new Promise(resolve => setTimeout(resolve, 100)); // 确保positions已渲染
+		const targetPosition = positions.find(p => p.name === settings.currentPosition);
+		if (targetPosition) {
+			selectPosition(settings.currentPosition);
+		}
+	}
+
+	// ...其他现有代码...
+});
+
+// 修改selectPosition函数以保存选择的岗位
+async function selectPosition(positionName) {
+	// 确保positions已加载
+	if (!positions || positions.length === 0) {
+		await new Promise(resolve => setTimeout(resolve, 100));
+	}
+
+	currentPosition = positions.find(p => p.name === positionName);
+	if (!currentPosition) {
+		console.warn(`找不到岗位: ${positionName}`);
+		return;
+	}
+
+	// 更新关键词显示
+	keywords = [...currentPosition.keywords];
+	excludeKeywords = [...currentPosition.excludeKeywords];
+
+	renderKeywords();
+	renderExcludeKeywords();
+	renderPositions();
+
+	// 更新岗位说明
+	updateJobDescription();
+
+	// 保存当前选择的岗位
+	await saveSettings();
 }
 
 // 加载AI配置
@@ -1824,11 +1869,7 @@ function updateAIConfigUI() {
 	document.getElementById('ai-click-prompt').value = aiConfig.clickPrompt || '';
 	document.getElementById('ai-contact-prompt').value = aiConfig.contactPrompt || '';
 
-	// 更新高精度复选框
-	const highPrecisionCheckbox = document.getElementById('ai-high-precision');
-	if (highPrecisionCheckbox) {
-		highPrecisionCheckbox.checked = aiConfig.highPrecision || false;
-	}
+
 }
 
 // 显示AI配置弹窗
@@ -1861,11 +1902,7 @@ async function saveAIConfig() {
 		aiConfig.clickPrompt = document.getElementById('ai-click-prompt').value.trim();
 		aiConfig.contactPrompt = document.getElementById('ai-contact-prompt').value.trim();
 
-		// 保存高精度设置
-		const highPrecisionCheckbox = document.getElementById('ai-high-precision');
-		if (highPrecisionCheckbox) {
-			aiConfig.highPrecision = highPrecisionCheckbox.checked;
-		}
+
 
 		// 验证提示语是否包含必要的标记符
 		if (!aiConfig.clickPrompt.includes('${候选人信息}') || !aiConfig.clickPrompt.includes('${岗位信息}')) {
@@ -1924,7 +1961,7 @@ async function saveAIConfig() {
 
 		// 检查AI连接
 		checkAIConnection();
-		
+
 		// 检查余额（如果在AI页面且有token）
 		if (currentTab === 'ai' && aiConfig.token) {
 			handleBalanceCheck();
@@ -2006,7 +2043,7 @@ async function checkSiliconFlowBalance() {
 		}
 
 		const data = await response.json();
-		
+
 		if (data.code === 20000 && data.status) {
 			const balance = parseFloat(data.data.totalBalance) || 0;
 			return {
@@ -2031,23 +2068,23 @@ async function handleBalanceCheck() {
 	try {
 		addLog('检查API账号余额...', 'info');
 		const result = await checkSiliconFlowBalance();
-		
+
 		if (result.success) {
 			const balance = result.balance;
 			addLog(`账号余额: ¥${balance.toFixed(2)}`, 'info');
-			
+
 			// 更新UI显示余额
 			updateBalanceDisplay(balance);
-			
+
 			if (balance < 1) {
 				// 余额不足提示
 				const message = `当前Token对应的账号余额不足1元（当前余额: ¥${balance.toFixed(2)}）。\n\n可能会无法使用部分模型。\n\n你可以选择：\n1. 切换免费模型\n2. 前往轨迹流动充值（首次需要实名认证）\n\n是否前往轨迹流动官网充值？`;
-				
+
 				if (confirm(message)) {
 					// 打开轨迹流动充值页面
 					chrome.tabs.create({ url: 'https://cloud.siliconflow.cn/account/billing' });
 				}
-				
+
 				addLog('余额不足，建议充值或切换免费模型', 'warning');
 			} else {
 				addLog('余额充足，可正常使用', 'success');
@@ -2069,10 +2106,10 @@ async function handleBalanceCheck() {
 function updateBalanceDisplay(balance) {
 	const balanceInfo = document.getElementById('ai-balance-info');
 	const balanceText = document.getElementById('ai-balance-text');
-	
+
 	if (balanceInfo && balanceText) {
 		balanceText.textContent = `轨迹流动余额: ¥${balance.toFixed(2)}`;
-		
+
 		// 根据余额设置颜色
 		if (balance < 1) {
 			balanceText.style.color = '#ff4444'; // 红色警告
@@ -2081,7 +2118,7 @@ function updateBalanceDisplay(balance) {
 		} else {
 			balanceText.style.color = '#4caf50'; // 绿色正常
 		}
-		
+
 		balanceInfo.style.display = 'block';
 	}
 }
