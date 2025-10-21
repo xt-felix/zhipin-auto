@@ -42,10 +42,15 @@ class LagouParser extends BaseParser {
         }
     }
 
+
+    extractCandidates2(data) {
+        return data
+    }
+
     extractCandidates(elements = null) {
         // 与 BossParser 相同的实现...
         // 可以直接复制 BossParser 中的 extractCandidates 方法
     }
 }
 
-export { LagouParser }; 
+export { LagouParser };

@@ -18,7 +18,8 @@ class ZhilianParser extends BaseParser {
                 { selector: 'fasdfasdf', type: '地点' },
                 { selector: 'fasdfasdf', type: '经验' },
                 { selector: 'sdfasdf', type: '标签' }
-            ]
+            ],
+            xiangqing: ['new-resume-detail--inner', 'km-scrollbar__view', 'km-scrollbar__wrap']
         };
 
         this.urlInfo = {
@@ -32,6 +33,8 @@ class ZhilianParser extends BaseParser {
             closeButton: 'km-icon sati sati-times-circle-s', // 关闭按钮
             viewButton: '.km-button--primary'   // 查看简历按钮
         };
+
+
     }
 
     // 重写查找元素的方法
@@ -39,15 +42,73 @@ class ZhilianParser extends BaseParser {
         return document.querySelectorAll(this.selectors.items);
     }
 
+    /**
+     * 构建第一次候选人信息
+     * @param {*} element
+     * @returns
+     */
+    getSimpleCandidateInfo(data) {
+        console.log("智联的信息");
+        let data2 = ""
+        data2 += "姓名：" + data.name + "\n"
+        data2 += "年龄：" + data.age + "\n"
+        data2 += "学历：" + data.education + "\n"
+        data2 += "学校：" + data.university + "\n"
+        data2 += "描述：" + data.description + "\n"
+
+        data.extraInfo.forEach(item => {
+
+            data2 += "额外信息：" + item.type + " " + item.value + "\n"
+
+        });
+
+
+        return data2;
+    }
+
+
+    /**
+     * 查找同事沟通记录
+     * @param {*} data
+     * @returns
+     */
+    queryColleagueContactedInfo(data) {
+
+
+        return ""
+    }
+
+    extractCandidates2(data) {
+        console.log("第二次查找到的数据");
+
+
+        let nameElement = null
+        // this.selectors.xiangqing.forEach(item => {
+
+        // });
+        nameElement = document.querySelectorAll("xiangqing");
+        console.log(nameElement);
+
+
+        if (nameElement) {
+            data = nameElement
+        } else {
+            return null
+        }
+
+        return data
+    }
+
+
     // 重写提取候选人信息的方法
     extractCandidates(elements = null) {
         console.log('开始提取智联信息');
         const candidates = [];
-        
+
         try {
             const items = elements || this.findElements();
             console.log('找到候选人元素:', items.length);
-            
+
             Array.from(items).forEach((item, index) => {
                 try {
                     const nameElement = item.querySelector(this.selectors.name);
@@ -85,14 +146,15 @@ class ZhilianParser extends BaseParser {
             console.error('提取候选人信息失败:', error);
             throw error;
         }
-        
+
         return candidates;
     }
+
 
     // 重写点击打招呼的方法
     clickMatchedItem(element) {
         try {
-            
+
             // 包含部分类名
 
             const greetButton = element.querySelector(`[class^="${this.selectors.clickTarget}"]`);
@@ -100,7 +162,7 @@ class ZhilianParser extends BaseParser {
             console.log(element);
 
             console.log(greetButton);
-            
+
             if (greetButton) {
                 greetButton.click();
                 return true;
@@ -118,7 +180,7 @@ class ZhilianParser extends BaseParser {
         console.log(element);
 
         element.click();
-        
+
         try {
             const detailLink = element.getElementsByClassName(this.detailSelectors.detailLink)[0];
             console.log(element.getElementsByClassName(this.detailSelectors.detailLink));
@@ -131,7 +193,7 @@ class ZhilianParser extends BaseParser {
             console.error('点击候选人详情失败:', error);
             return false;
         }
-       
+
     }
 
     // 重写关闭详情的方法
@@ -159,4 +221,4 @@ class ZhilianParser extends BaseParser {
     }
 }
 
-export { ZhilianParser }; 
+export { ZhilianParser };

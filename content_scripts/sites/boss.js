@@ -173,6 +173,10 @@ class BossParser extends BaseParser {
         );
     }
 
+    extractCandidates2(data) {
+        return data
+    }
+
     //提取信息
     async extractCandidates(elements = null) {
         try {

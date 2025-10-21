@@ -12,6 +12,8 @@ let port = null;
 let matchCount = 0;
 let currentPrompt = null;
 
+let enableSound = false;
+
 let ParserName = null
 
 // 显示提示信息
@@ -111,8 +113,8 @@ async function initializeParser() {
             await currentParser.loadSettings();
             console.log('解析器初始化完成');
         } else {
-            console.warn('未找到匹配的解析器，当前URL:', url);
-            throw new Error('未找到匹配的解析器');
+            // console.warn('未找到匹配的解析器，当前URL:', url);
+            // throw new Error('未找到匹配的解析器');
         }
     } catch (error) {
         console.error('初始化解析器失败:', error);
@@ -441,7 +443,11 @@ function addHighlightReason(element, reason, color) {
 
 // 处理单个元素的函数
 async function processElement(element, doc) {
+
+    console.log();
+
     try {
+        enableSound = currentParser.aiSettings.enableSound
         // 发送计数请求到服务器（不等待响应）
         const apiBase = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'https://goodhr.58it.cn';
         fetch(`${apiBase}/counter.php`, {
@@ -538,7 +544,6 @@ async function processElement(element, doc) {
                     const maxWaitTime = 10000; // 最大等待时间10秒
                     const startTime = Date.now();
                     //关闭候选人弹框
-                    // await currentParser.closeDetail();
 
                     const clicked = await currentParser.clickCandidateDetail(element);
                     if (clicked) {
@@ -553,6 +558,18 @@ async function processElement(element, doc) {
 
                         } catch (error) {
                             console.error('查询同事沟通过候选人的信息失败:', error);
+                        }
+
+
+                        try {
+                            //第二次组装信息
+                            let data2 = currentParser.extractCandidates2(candidate);
+                            if (data2) {
+                                simpleCandidateInfo = data2
+                            }
+                            console.log(simpleCandidateInfo);
+                        } catch (error) {
+                            console.error('第二次组装信息失败:', error);
                         }
 
                         // console.log(candidate);
@@ -572,10 +589,10 @@ async function processElement(element, doc) {
 
                             } else {
 
-                                const candidateInfo = await getCandidateInfo(candidate);
-                                // console.log(candidate);
-                                let { isok, msg } = {} = await performAIFilter(candidateInfo);
+                                // const candidateInfo = await getCandidateInfo(candidate);
+                                let { isok, msg } = {} = await performAIFilter(simpleCandidateInfo);
                                 shouldContact = isok;
+                                AiMsg = msg
                             }
 
 
@@ -593,7 +610,7 @@ async function processElement(element, doc) {
                     }
                 } else {
                     // console.log('不查看候选人详细信息:', candidate.name);
-                    // await randomDelay("不查看候选人详细信息");
+                    await randomDelay("不查看候选人详细信息");
 
                     // 如果不查看详情，直接使用关键词筛选
                     if (!currentParser.aiMode) {
@@ -618,7 +635,8 @@ async function processElement(element, doc) {
                         matchCount++;
                         console.log(`打招呼成功，当前计数: ${matchCount}/${matchLimit}`);
                         //播放提示音
-                        playNotificationSound();
+
+                        playNotificationSound()
                     }
 
                     await sendMessage({
@@ -658,59 +676,18 @@ async function processElement(element, doc) {
         console.error('处理元素失败:', error);
         element.removeAttribute('style');
     }
+
+
 }
 
-
-// 处理单个元素的函数
-async function playNotificationSound() {
-    try {
-        // 确保音频文件存在
-        const audioUrl = chrome.runtime.getURL('sounds/notification2.mp3');
-        const audio = new Audio(audioUrl);
-
-        // 预加载音频
-        audio.preload = 'auto';
-        audio.volume = 0.5;
-
-        // 检查用户是否与页面有过交互
-        const hasUserInteracted = document.visibilityState === 'visible' &&
-            (document.hasFocus() || document.activeElement);
-
-        if (hasUserInteracted) {
-            // 用户已交互，可以直接播放
-            audio.play().catch(error => {
-                console.error('直接播放失败:', error);
-                // 尝试通过用户交互事件触发
-                document.body.addEventListener('click', function handleClick() {
-                    audio.play().finally(() => {
-                        document.body.removeEventListener('click', handleClick);
-                    });
-                }, { once: true });
-            });
-        } else {
-            // 未交互，通过虚拟点击事件触发
-            const clickEvent = new MouseEvent('click', {
-                view: window,
-                bubbles: true,
-                cancelable: true
-            });
-            document.dispatchEvent(clickEvent);
-
-            audio.play().catch(error => {
-                console.error('虚拟点击播放失败:', error);
-            });
-        }
-
-        // 5秒后自动清理音频对象
-        setTimeout(() => {
-            audio.pause();
-            audio.removeAttribute('src');
-            audio.load();
-        }, 5000);
-    } catch (error) {
-        console.error('初始化音频失败:', error);
+function playNotificationSound() {
+    if (enableSound) {
+        const audio = new Audio(chrome.runtime.getURL('sounds/notification2.mp3'));
+        audio.volume = 0.5; // 设置音量
+        audio.play().catch(error => console.error('播放提示音失败:', error));
     }
 }
+
 
 // 处理来自popup的消息
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -731,6 +708,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                     currentParser.clickCandidateConfig.frequency = message.data.clickFrequency;
                     // console.log('更新点击频率为:', message.data.clickFrequency);
                 }
+                currentParser.aiMode = false;
 
                 // 更新其他设置
                 if (message.data.keywords) {

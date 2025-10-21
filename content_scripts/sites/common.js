@@ -51,6 +51,11 @@ class BaseParser {
         // 合并所有需要匹配的文本
         const allText = candidate
 
+        if (allText == null) {
+            alert("allText is null");
+            return false;
+        }
+
         //console.log('检查文本:', allText);
 
         // 检查排除关键词

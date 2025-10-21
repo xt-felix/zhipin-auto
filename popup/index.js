@@ -29,7 +29,7 @@ let adConfig = null;
 let aiExpireTime = null;
 
 // AI相关变量
-let currentTab = 'free'; // 当前选中的选项卡
+let currentTab = 'ai'; // 默认使用AI高级版
 let aiConfig = {
 	token: '',
 	model: 'deepseek-ai/DeepSeek-V3',
@@ -351,6 +351,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 		// 设置版本号 - 使用配置文件中的版本
 		const version = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.VERSION : chrome.runtime.getManifest().version;
 		document.getElementById('version').textContent = version;
+
+		// 优先从缓存读取当前模式，没有则使用默认AI高级版
+		const savedTab = await chrome.storage.local.get('selected_tab');
+		if (savedTab.selected_tab) {
+			currentTab = savedTab.selected_tab;
+		} else {
+			currentTab = 'ai';
+		}
+
+
 
 		// 加载AI配置
 		await loadAIConfig();
@@ -1087,7 +1097,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 
 // 添加提示音函数
 function playNotificationSound() {
-	const audio = new Audio(chrome.runtime.getURL('sounds/notification.mp3'));
+	const audio = new Audio(chrome.runtime.getURL('sounds/notification2.mp3'));
 	audio.volume = 0.5; // 设置音量
 	audio.play().catch(error => console.error('播放提示音失败:', error));
 }
@@ -1525,7 +1535,7 @@ function updateAIExpireDisplay() {
 async function setAIExpireTime() {
 	// 设置7天后到期
 	const expireDate = new Date();
-	expireDate.setDate(expireDate.getDate() + 7);
+	expireDate.setDate(expireDate.getDate() + 3);
 	// 格式化为 YYYY-MM-DD 字符串格式
 	aiExpireTime = expireDate.toISOString().split('T')[0];
 
@@ -1533,7 +1543,7 @@ async function setAIExpireTime() {
 	if (boundPhone) {
 		try {
 			await syncSettingsToServer();
-			addLog('赠送AI版本7天试用期', 'success');
+			addLog('赠送AI版本3天试用期', 'success');
 		} catch (error) {
 			addLog('保存AI到期时间到服务器失败: ' + error.message, 'error');
 			throw error; // 重新抛出错误，让调用者知道保存失败
@@ -1748,6 +1758,21 @@ async function switchTab(tabName) {
 		if (aiConfig.token) {
 			handleBalanceCheck();
 		}
+
+		// 通知content script切换到AI模式
+		chrome.tabs.query({
+			active: true,
+			currentWindow: true
+		}, tabs => {
+			if (tabs[0]) {
+				chrome.tabs.sendMessage(tabs[0].id, {
+					type: 'SET_AI_MODE',
+					data: {
+						aiMode: true
+					}
+				});
+			}
+		});
 	} else {
 		scrollButton.innerHTML = `
             <svg class="icon" viewBox="0 0 24 24">
@@ -1763,6 +1788,21 @@ async function switchTab(tabName) {
 
 		// 隐藏余额显示
 		hideBalanceDisplay();
+
+		// 通知content script切换到免费模式
+		chrome.tabs.query({
+			active: true,
+			currentWindow: true
+		}, tabs => {
+			if (tabs[0]) {
+				chrome.tabs.sendMessage(tabs[0].id, {
+					type: 'SET_AI_MODE',
+					data: {
+						aiMode: false
+					}
+				});
+			}
+		});
 	}
 
 	// 保存当前选择的版本

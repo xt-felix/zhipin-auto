@@ -36,7 +36,7 @@ class LiepinParser extends BaseParser {
         console.log(parent);
 
         console.log(prefix);
-        
+
         let element = parent.querySelector(`[class^="${prefix}"]`);
         if (!element) {
             element = parent.querySelector(`[class*="${prefix}"]`);
@@ -44,39 +44,44 @@ class LiepinParser extends BaseParser {
         return element;
     }
 
+
+    extractCandidates2(data) {
+        return data
+    }
+
     extractCandidates(elements = null) {
         console.log('开始提取候选人信息');
         console.log('传入的元素:', elements);
-        
+
         const candidates = [];
         let items;
-        
+
         try {
             if (elements) {
                 items = elements;
             } else {
                 items = document.querySelectorAll(`[class^="${this.selectors.items}"], [class*=" ${this.selectors.items}"]`);
-                
+
                 if (items.length === 0) {
                     console.error('未找到任何候选人元素!');
                     console.log('当前使用的选择器前缀:', this.selectors.items);
                     throw new Error('未找到任何候选人元素，请检查选择器是否正确');
                 }
             }
-            
-            
+
+
             Array.from(items).forEach((item, index) => {
                 this.highlightElement(item, 'processing');
-                
+
                 try {
                     const nameElement = this.getElementByClassPrefix(item, this.selectors.name);
                     const ageElement = this.getElementByClassPrefix(item, this.selectors.age);
                     const educationElement = this.getElementByClassPrefix(item, this.selectors.education);
                     const universityElement = this.getElementByClassPrefix(item, this.selectors.university);
                     const descriptionElement = this.getElementByClassPrefix(item, this.selectors.description);
-                    
+
                     const extraInfo = this.extractExtraInfo(item, this.selectors.extraSelectors);
-                    
+
                     const candidate = {
                         name: nameElement?.textContent?.trim() || '',
                         age: parseInt(ageElement?.textContent) || 0,
@@ -85,8 +90,8 @@ class LiepinParser extends BaseParser {
                         description: descriptionElement?.textContent?.trim() || item.textContent?.trim() || '',
                         extraInfo: extraInfo
                     };
-                    
-                    
+
+
                     if (candidate.name) {
                         candidates.push(candidate);
                         this.highlightElement(item, 'matched');
@@ -99,12 +104,12 @@ class LiepinParser extends BaseParser {
                     this.clearHighlight(item);
                 }
             });
-            
+
         } catch (error) {
             console.error('提取候选人信息失败:', error);
             throw error;
         }
-        
+
         return candidates;
     }
 
@@ -131,11 +136,11 @@ class LiepinParser extends BaseParser {
         try {
             // 首先尝试点击姓名链接
             const detailLink = this.getElementByClassPrefix(element, this.detailSelectors.detailLink);
-            
+
             if (detailLink) {
                 console.log('查看候选人详情:', detailLink);
                 detailLink.click();
-                
+
                 // 等待查看按钮出现并点击（某些情况下需要）
                 // await new Promise(resolve => setTimeout(resolve, 500));
                 // const viewButton = document.querySelector(this.detailSelectors.viewButton);
@@ -143,10 +148,10 @@ class LiepinParser extends BaseParser {
                 //     console.log('找到查看按钮，点击');
                 //     viewButton.click();
                 // }
-                
+
                 return true;
             }
-            
+
             console.log('未找到详情链接');
             return false;
         } catch (error) {
@@ -160,18 +165,18 @@ class LiepinParser extends BaseParser {
         try {
             // 等待关闭按钮出现
             await new Promise(resolve => setTimeout(resolve, 500));
-            
+
             // 查找关闭按钮
-            
+
             const closeButton = document.querySelector(`[class*="${this.detailSelectors.closeButton}"]`);
             console.log(closeButton);
-            
+
             if (closeButton) {
                 console.log('找到关闭按钮');
                 closeButton.click();
                 return true;
             }
-            
+
             console.log('未找到关闭按钮');
             return false;
         } catch (error) {
@@ -181,4 +186,4 @@ class LiepinParser extends BaseParser {
     }
 }
 
-export { LiepinParser }; 
+export { LiepinParser };
