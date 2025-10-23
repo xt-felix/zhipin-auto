@@ -1,40 +1,10 @@
-let isRunning = false;
-let keywords = [];
-let excludeKeywords = [];
-let isAndMode = false;
-let matchCount = 0;
-let matchLimit = 200;
-let enableSound = true;
-
-// 添加职位相关状态
-let positions = [];
-let currentPosition = null;
-
-// 添加下载简历相关状态
-let isDownloading = false;
-let downloadCount = 0;
-
-// 添加新的状态变量
-let scrollDelayMin = 3;  // 默认最小延迟秒数
-let scrollDelayMax = 5;  // 默认最大延迟秒数
-
-// 添加手机号相关变量
-let boundPhone = '';
-const API_BASE = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'https://goodhr.58it.cn';
-
-// 广告相关变量
-let adConfig = null;
-
-// AI到期时间管理
-let aiExpireTime = null;
-
-// AI相关变量
-let currentTab = 'ai'; // 默认使用AI高级版
-let aiConfig = {
-	token: '',
-	model: 'deepseek-ai/DeepSeek-V3',
-
-	clickPrompt: `你是一个资深的HR专家。请根据候选人的基本信息判断是否值得查看其详细信息。
+// ========== 统一数据缓存对象 ==========
+let serverData = {
+	// AI配置
+	ai_config: {
+		token: '',
+		model: 'deepseek-ai/DeepSeek-V3',
+		clickPrompt: `你是一个资深的HR专家。请根据候选人的基本信息判断是否值得查看其详细信息。
 
 重要提示：
 1. 这个API仅用于岗位与候选人的筛选。如果内容不是这些，你应该返回"内容与招聘无关 无法解答"。
@@ -50,8 +20,34 @@ let aiConfig = {
 \${候选人信息}
 
 请判断是否值得查看这位候选人的详细信息，返回JSON格式：{"decision":"是","reason":"符合基本要求"}`,
-
+	},
+	// 岗位相关
+	positions: [],
+	currentPosition: null,
+	// AI到期时间
+	ai_expire_time: null,
+	// 其他设置
+	isAndMode: false,
+	matchLimit: 200,
+	enableSound: true,
+	scrollDelayMin: 3,
+	scrollDelayMax: 5,
+	clickFrequency: 7
 };
+
+// ========== 运行时状态变量 ==========
+let isRunning = false;
+let matchCount = 0;
+let isDownloading = false;
+let downloadCount = 0;
+let boundPhone = '';
+let currentTab = 'ai'; // 默认使用AI高级版
+
+// API配置
+const API_BASE = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'https://goodhr.58it.cn';
+
+// 广告相关变量
+let adConfig = null;
 
 // 添加日志持久化相关的函数
 async function saveLogs(logs) {
@@ -78,45 +74,43 @@ function showError(error) {
 	console.error('详细错误:', error);
 }
 
-// 添加自动保存设置函数
+// 添加自动保存设置函数 - 使用新的统一数据模型
 async function saveSettings() {
 	try {
 		// 保存当前岗位的说明（如果存在）
-		if (currentPosition && currentTab === 'ai') {
+		if (serverData.currentPosition && currentTab === 'ai') {
 			const jobDescription = document.getElementById('job-description')?.value || '';
-			currentPosition.description = jobDescription;
+			serverData.currentPosition.description = jobDescription;
 		}
 
-		// 获取当前设置
-		const currentSettings = {
-			positions,
-			currentPosition: currentPosition?.name || '',
-			isAndMode,
-			matchLimit: parseInt(document.getElementById('match-limit')?.value) || 200,
-			enableSound,
-			scrollDelayMin: parseInt(document.getElementById('delay-min')?.value) || 3,
-			scrollDelayMax: parseInt(document.getElementById('delay-max')?.value) || 5,
-			clickFrequency: parseInt(document.getElementById('click-frequency')?.value) || 7
-		};
+		// 更新serverData中的设置
+		serverData.isAndMode = document.getElementById('keywords-and-mode')?.checked || false;
+		serverData.matchLimit = parseInt(document.getElementById('match-limit')?.value) || 200;
+		serverData.enableSound = document.getElementById('enable-sound')?.checked || true;
+		serverData.scrollDelayMin = parseInt(document.getElementById('delay-min')?.value) || 3;
+		serverData.scrollDelayMax = parseInt(document.getElementById('delay-max')?.value) || 5;
+		serverData.clickFrequency = parseInt(document.getElementById('click-frequency')?.value) || 7;
 
 		// 保存到本地存储
-		await chrome.storage.local.set(currentSettings);
+		await chrome.storage.local.set({
+			'hr_assistant_settings': {
+				positions: serverData.positions,
+				currentPosition: serverData.currentPosition,
+				isAndMode: serverData.isAndMode,
+				matchLimit: serverData.matchLimit,
+				enableSound: serverData.enableSound,
+				scrollDelayMin: serverData.scrollDelayMin,
+				scrollDelayMax: serverData.scrollDelayMax,
+				clickFrequency: serverData.clickFrequency
+			},
+			'ai_config': serverData.ai_config,
+			'ai_expire_time': serverData.ai_expire_time
+		});
 
-		// 如果绑定了手机号，直接同步到服务器
+		// 如果绑定了手机号，同步到服务器
 		if (boundPhone) {
 			try {
-				const response = await fetch(`${API_BASE}/updatejson.php?phone=${boundPhone}`, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify(currentSettings)
-				});
-
-				if (!response.ok) {
-					throw new Error('服务器同步失败');
-				}
-
+				await updateServerData();
 				addLog('设置已更新并同步到服务器', 'success');
 			} catch (error) {
 				addLog('同步到服务器失败: ' + error.message, 'error');
@@ -135,9 +129,21 @@ async function saveSettings() {
 				chrome.tabs.sendMessage(tabs[0].id, {
 					action: 'SETTINGS_UPDATED',
 					data: {
-						...currentSettings,
-						keywords: currentPosition?.keywords || [],
-						excludeKeywords: currentPosition?.excludeKeywords || []
+						positions: serverData.positions,
+						currentPosition: serverData.currentPosition,
+						isAndMode: serverData.isAndMode,
+						matchLimit: serverData.matchLimit,
+						enableSound: serverData.enableSound,
+						scrollDelayMin: serverData.scrollDelayMin,
+						scrollDelayMax: serverData.scrollDelayMax,
+						clickFrequency: serverData.clickFrequency,
+						keywords: serverData.currentPosition?.keywords || [],
+						excludeKeywords: serverData.currentPosition?.excludeKeywords || []
+					}
+				}, response => {
+					if (chrome.runtime.lastError) {
+						// content script不存在，忽略错误
+						console.log('content script未加载，忽略消息发送');
 					}
 				});
 			}
@@ -166,10 +172,9 @@ function addKeywordBase() {
 }
 
 function removeKeyword(keyword) {
-	if (!currentPosition) return;
+	if (!serverData.currentPosition) return;
 
-	currentPosition.keywords = currentPosition.keywords.filter(k => k !== keyword);
-	keywords = [...currentPosition.keywords];
+	serverData.currentPosition.keywords = serverData.currentPosition.keywords.filter(k => k !== keyword);
 	renderKeywords();
 	saveSettings();
 
@@ -181,7 +186,7 @@ function removeKeyword(keyword) {
 
 // 包装函数，添加自动保存功能
 function addKeyword() {
-	if (!currentPosition) {
+	if (!serverData.currentPosition) {
 		addLog('⚠️ 请先选择岗位', 'error');
 		return;
 	}
@@ -194,9 +199,8 @@ function addKeyword() {
 	}
 
 	const keyword = input.value.trim();
-	if (keyword && !currentPosition.keywords.includes(keyword)) {
-		currentPosition.keywords.push(keyword);
-		keywords = [...currentPosition.keywords];
+	if (keyword && !serverData.currentPosition.keywords.includes(keyword)) {
+		serverData.currentPosition.keywords.push(keyword);
 		renderKeywords();
 		input.value = '';
 		saveSettings();
@@ -223,9 +227,8 @@ function addExcludeKeyword() {
 	}
 
 	const keyword = input.value.trim();
-	if (keyword && !currentPosition.excludeKeywords.includes(keyword)) {
-		currentPosition.excludeKeywords.push(keyword);
-		excludeKeywords = [...currentPosition.excludeKeywords];
+	if (keyword && !serverData.currentPosition.excludeKeywords.includes(keyword)) {
+		serverData.currentPosition.excludeKeywords.push(keyword);
 		renderExcludeKeywords();
 		input.value = '';
 		saveSettings();
@@ -239,10 +242,9 @@ function addExcludeKeyword() {
 
 // 删除排除关键词的函数
 function removeExcludeKeyword(keyword) {
-	if (!currentPosition) return;
+	if (!serverData.currentPosition) return;
 
-	currentPosition.excludeKeywords = currentPosition.excludeKeywords.filter(k => k !== keyword);
-	excludeKeywords = [...currentPosition.excludeKeywords];
+	serverData.currentPosition.excludeKeywords = serverData.currentPosition.excludeKeywords.filter(k => k !== keyword);
 	renderExcludeKeywords();
 	saveSettings();
 
@@ -261,7 +263,8 @@ function renderExcludeKeywords() {
 
 	container.innerHTML = '';
 
-	excludeKeywords.forEach(keyword => {
+	const currentExcludeKeywords = serverData.currentPosition ? serverData.currentPosition.excludeKeywords : [];
+	currentExcludeKeywords.forEach(keyword => {
 		const keywordDiv = document.createElement('div');
 		keywordDiv.className = 'keyword-tag';
 		keywordDiv.style.backgroundColor = '#ffe0e0'; // 使用红色背景区分
@@ -348,18 +351,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
-		// 加载AI配置
+		// 新的初始化流程：获取服务器数据 → 缓存 → 检查到期日期 → 更新UI
+		await initializeFromServer();
+
+		// 加载AI配置并检查连接状态
 		await loadAIConfig();
-
-		// 加载AI到期时间
-		await loadAIExpireTime();
-
-		// 设置定时器，每小时更新一次到期时间显示
-		setInterval(() => {
-			if (currentTab === 'ai') {
-				updateAIExpireDisplay();
-			}
-		}, 60 * 60 * 1000); // 每小时更新一次
 
 		// 绑定选项卡切换事件
 
@@ -625,8 +621,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 		// 绑定岗位说明变化事件
 		document.getElementById('job-description')?.addEventListener('input', () => {
-			if (currentPosition) {
-				currentPosition.description = document.getElementById('job-description').value;
+			if (serverData.currentPosition) {
+				serverData.currentPosition.description = document.getElementById('job-description').value;
 				saveSettings();
 			}
 		});
@@ -729,7 +725,7 @@ async function getSettings() {
 
 // 修改 startAutoScroll 函数
 async function startAutoScroll() {
-	if (!currentPosition) {
+	if (!serverData.currentPosition) {
 		addLog('⚠️ 请先选择岗位', 'error');
 		isRunning = false;
 		updateUI();
@@ -784,10 +780,10 @@ async function startAutoScroll() {
 						tabs[0].id, {
 						action: 'START_AI_SCROLL',
 						data: {
-							positionName: currentPosition.name,
-							jobDescription: currentPosition.description,
-							aiConfig: aiConfig,
-							matchLimit: matchLimit,
+							positionName: serverData.currentPosition.name,
+							jobDescription: serverData.currentPosition.description,
+							aiConfig: serverData.ai_config,
+							matchLimit: serverData.matchLimit,
 							scrollDelayMin: parseInt(delayMinInput.value) || 3,
 							scrollDelayMax: parseInt(delayMaxInput.value) || 5,
 							clickFrequency: parseInt(clickFrequencyInput.value) || 7,
@@ -810,7 +806,7 @@ async function startAutoScroll() {
 		} else {
 			// 免费模式
 			// 检查是否有关键词
-			if (!currentPosition.keywords.length && !currentPosition.excludeKeywords.length) {
+			if (!serverData.currentPosition.keywords.length && !serverData.currentPosition.excludeKeywords.length) {
 				if (!confirm('当前岗位没有设置任何关键词，将会给所有候选人打招呼，是否继续？')) {
 					return;
 				}
@@ -818,7 +814,7 @@ async function startAutoScroll() {
 			}
 
 			addLog('开始运行自动滚动...', 'info');
-			addLog(`设置打招呼暂停数: ${matchLimit}`, 'info');
+			addLog(`设置打招呼暂停数: ${serverData.matchLimit}`, 'info');
 			addLog(`随机延迟时间免费: ${delayMinInput.value}-${delayMaxInput.value}秒`, 'info');
 
 			chrome.tabs.query({
@@ -830,10 +826,10 @@ async function startAutoScroll() {
 						tabs[0].id, {
 						action: 'START_SCROLL',
 						data: {
-							keywords: currentPosition.keywords,
-							excludeKeywords: currentPosition.excludeKeywords,
-							isAndMode: isAndMode,
-							matchLimit: matchLimit,
+							keywords: serverData.currentPosition.keywords,
+							excludeKeywords: serverData.currentPosition.excludeKeywords,
+							isAndMode: serverData.isAndMode,
+							matchLimit: serverData.matchLimit,
 							scrollDelayMin: parseInt(delayMinInput.value) || 3,
 							scrollDelayMax: parseInt(delayMaxInput.value) || 5,
 							clickFrequency: parseInt(clickFrequencyInput.value) || 7,
@@ -926,7 +922,8 @@ function renderKeywords() {
 	container.innerHTML = '';
 
 	// 为每个关键词创建元素
-	keywords.forEach(keyword => {
+	const currentKeywords = serverData.currentPosition ? serverData.currentPosition.keywords : [];
+	currentKeywords.forEach(keyword => {
 		const keywordDiv = document.createElement('div');
 		keywordDiv.className = 'keyword-tag';
 		keywordDiv.innerHTML = `
@@ -1167,7 +1164,7 @@ function addPosition() {
 
 	console.log("positionName", positionName)
 
-	if (positionName && !positions.find(p => p.name === positionName)) {
+	if (positionName && !serverData.positions.find(p => p.name === positionName)) {
 		const newPosition = {
 			name: positionName,
 			keywords: [],
@@ -1175,7 +1172,7 @@ function addPosition() {
 			description: '' // 新增岗位说明字段
 		};
 
-		positions.push(newPosition);
+		serverData.positions.push(newPosition);
 		renderPositions();
 
 		// 清空当前输入框
@@ -1184,7 +1181,7 @@ function addPosition() {
 		saveSettings();
 		selectPosition(positionName);
 		addLog(`已添加岗位：${positionName}`, 'success');
-	} else if (positionName && positions.find(p => p.name === positionName)) {
+	} else if (positionName && serverData.positions.find(p => p.name === positionName)) {
 		addLog('该岗位已存在', 'error');
 	} else if (!positionName) {
 		addLog('请输入岗位名称', 'error');
@@ -1193,9 +1190,9 @@ function addPosition() {
 
 function removePosition(positionName) {
 	if (confirm(`确定要删除职位"${positionName}"吗？\n删除后该职位的所有关键词都将被删除。`)) {
-		positions = positions.filter(p => p.name !== positionName);
-		if (currentPosition?.name === positionName) {
-			currentPosition = null;
+		serverData.positions = serverData.positions.filter(p => p.name !== positionName);
+		if (serverData.currentPosition?.name === positionName) {
+			serverData.currentPosition = null;
 		}
 		renderPositions();
 		renderKeywords();
@@ -1205,12 +1202,9 @@ function removePosition(positionName) {
 }
 
 function selectPosition(positionName) {
-	currentPosition = positions.find(p => p.name === positionName);
+	serverData.currentPosition = serverData.positions.find(p => p.name === positionName);
 
 	// 更新关键词显示
-	keywords = currentPosition ? [...currentPosition.keywords] : [];
-	excludeKeywords = currentPosition ? [...currentPosition.excludeKeywords] : [];
-
 	renderKeywords();
 	renderExcludeKeywords();
 	renderPositions();
@@ -1225,10 +1219,10 @@ function updateJobDescription() {
 	const jobDescriptionGroup = document.getElementById('ai-job-description-group');
 
 	// 只有在AI模式且选中了岗位时才显示岗位说明
-	if (currentTab === 'ai' && currentPosition && jobDescriptionGroup) {
+	if (currentTab === 'ai' && serverData.currentPosition && jobDescriptionGroup) {
 		jobDescriptionGroup.style.display = 'block';
 		if (jobDescriptionTextarea) {
-			jobDescriptionTextarea.value = currentPosition.description || '';
+			jobDescriptionTextarea.value = serverData.currentPosition.description || '';
 		}
 	} else {
 		// 其他情况隐藏岗位说明
@@ -1247,9 +1241,9 @@ function renderPositions() {
 	if (container) {
 		container.innerHTML = '';
 
-		positions.forEach(position => {
+		serverData.positions.forEach(position => {
 			const positionDiv = document.createElement('div');
-			positionDiv.className = `position-tag ${currentPosition?.name === position.name ? 'active' : ''}`;
+			positionDiv.className = `position-tag ${serverData.currentPosition?.name === position.name ? 'active' : ''}`;
 			positionDiv.innerHTML = `
 				${position.name}
 				<button class="remove-btn" data-position="${position.name}">&times;</button>
@@ -1268,7 +1262,7 @@ function renderPositions() {
 		});
 
 		// 如果没有职位,显示提示文本
-		if (positions.length === 0) {
+		if (serverData.positions.length === 0) {
 			const emptyTip = document.createElement('div');
 			emptyTip.style.cssText = 'color: #999; font-size: 12px; padding: 4px;';
 			emptyTip.textContent = '请添加职位...';
@@ -1281,9 +1275,9 @@ function renderPositions() {
 	if (aiContainer) {
 		aiContainer.innerHTML = '';
 
-		positions.forEach(position => {
+		serverData.positions.forEach(position => {
 			const positionDiv = document.createElement('div');
-			positionDiv.className = `position-tag ${currentPosition?.name === position.name ? 'active' : ''}`;
+			positionDiv.className = `position-tag ${serverData.currentPosition?.name === position.name ? 'active' : ''}`;
 			positionDiv.innerHTML = `
 				${position.name}
 				<button class="remove-btn" data-position="${position.name}">&times;</button>
@@ -1302,7 +1296,7 @@ function renderPositions() {
 		});
 
 		// 如果没有职位,显示提示文本
-		if (positions.length === 0) {
+		if (serverData.positions.length === 0) {
 			const emptyTip = document.createElement('div');
 			emptyTip.style.cssText = 'color: #999; font-size: 12px; padding: 4px;';
 			emptyTip.textContent = '请添加职位...';
@@ -1321,9 +1315,14 @@ function notifyKeywordsUpdate() {
 			chrome.tabs.sendMessage(tabs[0].id, {
 				action: 'UPDATE_KEYWORDS',
 				data: {
-					keywords: currentPosition.keywords,
-					excludeKeywords: currentPosition.excludeKeywords,
-					isAndMode: isAndMode
+					keywords: serverData.currentPosition.keywords,
+					excludeKeywords: serverData.currentPosition.excludeKeywords,
+					isAndMode: serverData.isAndMode
+				}
+			}, response => {
+				if (chrome.runtime.lastError) {
+					// content script不存在，忽略错误
+					console.log('content script未加载，忽略关键词更新消息');
 				}
 			});
 		}
@@ -1453,13 +1452,13 @@ function renderRankingList(data) {
 
 // AI到期时间管理函数
 function checkAIExpiration() {
-	if (!aiExpireTime) {
+	if (!serverData.ai_expire_time) {
 		return false; // 没有设置到期时间，需要设置
 	}
 
 	const now = new Date();
 	// 将字符串日期转换为Date对象，格式：YYYY-MM-DD
-	const expireDate = new Date(aiExpireTime + 'T00:00:00');
+	const expireDate = new Date(serverData.ai_expire_time + 'T00:00:00');
 
 	return now > expireDate; // 返回true表示已过期
 }
@@ -1470,9 +1469,9 @@ async function initializeAIExpireTime() {
 		// 第一步：检测服务器有没有到期时间
 		if (boundPhone) {
 			const hasServerData = await syncSettingsFromServer();
-			if (hasServerData && aiExpireTime) {
+			if (hasServerData && serverData.ai_expire_time) {
 				// 服务器有数据，保存到本地并显示
-				await chrome.storage.local.set({ 'ai_expire_time': aiExpireTime });
+				await chrome.storage.local.set({ 'ai_expire_time': serverData.ai_expire_time });
 				addLog('已从服务器获取AI到期时间', 'success');
 				updateAIExpireDisplay();
 				return;
@@ -1485,8 +1484,8 @@ async function initializeAIExpireTime() {
 		// 第三步：重复第一步，从服务器获取刚保存的到期时间
 		if (boundPhone) {
 			await syncSettingsFromServer();
-			if (aiExpireTime) {
-				await chrome.storage.local.set({ 'ai_expire_time': aiExpireTime });
+			if (serverData.ai_expire_time) {
+				await chrome.storage.local.set({ 'ai_expire_time': serverData.ai_expire_time });
 				addLog('AI到期时间已设置并同步到服务器', 'success');
 				updateAIExpireDisplay();
 			}
@@ -1505,7 +1504,7 @@ function updateAIExpireDisplay() {
 		return;
 	}
 
-	if (!aiExpireTime) {
+	if (!serverData.ai_expire_time) {
 		// 没有设置到期时间，不显示
 		expireText.textContent = '';
 		return;
@@ -1513,7 +1512,7 @@ function updateAIExpireDisplay() {
 
 	const now = new Date();
 	// 将字符串日期转换为Date对象，格式：YYYY-MM-DD
-	const expireDate = new Date(aiExpireTime + 'T00:00:00');
+	const expireDate = new Date(serverData.ai_expire_time + 'T00:00:00');
 	const timeDiff = expireDate.getTime() - now.getTime();
 	const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
@@ -1541,12 +1540,12 @@ async function setAIExpireTime() {
 	const expireDate = new Date();
 	expireDate.setDate(expireDate.getDate() + 3);
 	// 格式化为 YYYY-MM-DD 字符串格式
-	aiExpireTime = expireDate.toISOString().split('T')[0];
+	serverData.ai_expire_time = expireDate.toISOString().split('T')[0];
 
 	// 如果绑定了手机号，保存到服务器
 	if (boundPhone) {
 		try {
-			await syncSettingsToServer();
+			await updateServerData();
 			addLog('赠送AI版本3天试用期', 'success');
 		} catch (error) {
 			addLog('保存AI到期时间到服务器失败: ' + error.message, 'error');
@@ -1564,9 +1563,9 @@ async function loadAIExpireTime() {
 		if (boundPhone) {
 			try {
 				const hasServerData = await syncSettingsFromServer();
-				if (hasServerData && aiExpireTime) {
+				if (hasServerData && serverData.ai_expire_time) {
 					// 服务器有数据，保存到本地
-					await chrome.storage.local.set({ 'ai_expire_time': aiExpireTime });
+					await chrome.storage.local.set({ 'ai_expire_time': serverData.ai_expire_time });
 					addLog('已从服务器加载AI到期时间', 'success');
 				}
 			} catch (error) {
@@ -1603,7 +1602,7 @@ async function bindPhone(phone) {
 		}
 
 		// 检查AI到期时间，如果没有则初始化
-		if (!aiExpireTime) {
+		if (!serverData.ai_expire_time) {
 			await initializeAIExpireTime();
 		}
 	} catch (error) {
@@ -1612,7 +1611,7 @@ async function bindPhone(phone) {
 	}
 }
 
-// 从服务器同步设置
+// 从服务器同步设置 - 使用新的统一数据模型
 async function syncSettingsFromServer() {
 	try {
 		if (!boundPhone) return null;
@@ -1624,61 +1623,25 @@ async function syncSettingsFromServer() {
 
 		const data = await response.json();
 		if (data && Object.keys(data).length > 0) {
-			// 更新本地设置
-			positions = data.positions || [];
-			currentPosition = data.currentPosition || null;
-			isAndMode = data.isAndMode || false;
-			matchLimit = data.matchLimit || 200;
-			enableSound = data.enableSound !== undefined ? data.enableSound : true;
-			scrollDelayMin = data.scrollDelayMin || 3;
-			scrollDelayMax = data.scrollDelayMax || 5;
+			// 使用服务器数据覆盖本地缓存
+			serverData = { ...serverData, ...data };
 
-			// 同步AI配置
-			if (data.ai_config) {
-				aiConfig = { ...aiConfig, ...data.ai_config };
-				await chrome.storage.local.set({ 'ai_config': aiConfig });
-				updateAIConfigUI();
-				addLog('AI配置已从服务器同步', 'success');
-			}
-
-			// 同步AI到期时间
-			if (data.ai_expire_time) {
-				aiExpireTime = data.ai_expire_time;
-				await chrome.storage.local.set({ 'ai_expire_time': aiExpireTime });
-				addLog('AI到期时间已从服务器同步', 'success');
-
-				// 更新到期时间显示
-				updateAIExpireDisplay();
-			} else {
-
-				// 如果没有到期时间，则初始化到期时间
-				await initializeAIExpireTime(data);
-
-			}
-
-			// 保存到本地存储，但不触发服务器同步
+			// 保存到本地存储
 			await chrome.storage.local.set({
-				positions,
-				currentPosition,
-				isAndMode,
-				matchLimit,
-				enableSound,
-				scrollDelayMin,
-				scrollDelayMax
+				'hr_assistant_settings': {
+					positions: serverData.positions,
+					currentPosition: serverData.currentPosition,
+					isAndMode: serverData.isAndMode,
+					matchLimit: serverData.matchLimit,
+					enableSound: serverData.enableSound,
+					scrollDelayMin: serverData.scrollDelayMin,
+					scrollDelayMax: serverData.scrollDelayMax
+				},
+				'ai_expire_time': serverData.ai_expire_time
 			});
 
 			// 更新UI
-			renderPositions();
-			if (currentPosition) {
-				selectPosition(currentPosition.name);
-			}
-
-			// 更新输入框的值
-			document.getElementById('match-limit').value = matchLimit;
-			document.getElementById('delay-min').value = scrollDelayMin;
-			document.getElementById('delay-max').value = scrollDelayMax;
-			document.getElementById('enable-sound').checked = enableSound;
-			document.getElementById('keywords-and-mode').checked = isAndMode;
+			updateAllUI();
 
 			addLog('已从服务器同步配置', 'success');
 			return true;
@@ -1761,7 +1724,7 @@ async function switchTab(tabName) {
 		updateAIExpireDisplay();
 
 		// 检查API余额（仅在有token时检查）
-		if (aiConfig.token) {
+		if (serverData.ai_config.token) {
 			handleBalanceCheck();
 		}
 
@@ -1775,6 +1738,11 @@ async function switchTab(tabName) {
 					action: 'SET_AI_MODE',
 					data: {
 						aiMode: true
+					}
+				}, response => {
+					if (chrome.runtime.lastError) {
+						// content script不存在，忽略错误
+						console.log('content script未加载，忽略AI模式设置消息');
 					}
 				});
 			}
@@ -1806,6 +1774,11 @@ async function switchTab(tabName) {
 					data: {
 						aiMode: false
 					}
+				}, response => {
+					if (chrome.runtime.lastError) {
+						// content script不存在，忽略错误
+						console.log('content script未加载，忽略AI模式设置消息');
+					}
 				});
 			}
 		});
@@ -1831,7 +1804,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	if (settings.currentPosition) {
 		// 确保positions已加载后再尝试选择岗位
 		await new Promise(resolve => setTimeout(resolve, 100)); // 确保positions已渲染
-		const targetPosition = positions.find(p => p.name === settings.currentPosition);
+		const targetPosition = serverData.positions.find(p => p.name === settings.currentPosition);
 		if (targetPosition) {
 			selectPosition(settings.currentPosition);
 		}
@@ -1843,20 +1816,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 修改selectPosition函数以保存选择的岗位
 async function selectPosition(positionName) {
 	// 确保positions已加载
-	if (!positions || positions.length === 0) {
+	if (!serverData.positions || serverData.positions.length === 0) {
 		await new Promise(resolve => setTimeout(resolve, 100));
 	}
 
-	currentPosition = positions.find(p => p.name === positionName);
-	if (!currentPosition) {
+	serverData.currentPosition = serverData.positions.find(p => p.name === positionName);
+	if (!serverData.currentPosition) {
 		console.warn(`找不到岗位: ${positionName}`);
 		return;
 	}
 
 	// 更新关键词显示
-	keywords = [...currentPosition.keywords];
-	excludeKeywords = [...currentPosition.excludeKeywords];
-
 	renderKeywords();
 	renderExcludeKeywords();
 	renderPositions();
@@ -1873,7 +1843,7 @@ async function loadAIConfig() {
 	try {
 		const result = await chrome.storage.local.get('ai_config');
 		if (result.ai_config) {
-			aiConfig = { ...aiConfig, ...result.ai_config };
+			serverData.ai_config = { ...serverData.ai_config, ...result.ai_config };
 			updateAIConfigUI();
 		}
 
@@ -1886,7 +1856,7 @@ async function loadAIConfig() {
 
 // 更新AI配置UI
 function updateAIConfigUI() {
-	document.getElementById('ai-token').value = aiConfig.token;
+	document.getElementById('ai-token').value = serverData.ai_config.token;
 
 	// 处理模型选择
 	const modelSelect = document.getElementById('ai-model');
@@ -1901,19 +1871,19 @@ function updateAIConfigUI() {
 		'deepseek-ai/DeepSeek-V3'
 	];
 
-	if (presetModels.includes(aiConfig.model)) {
-		modelSelect.value = aiConfig.model;
+	if (presetModels.includes(serverData.ai_config.model)) {
+		modelSelect.value = serverData.ai_config.model;
 		customModelInput.style.display = 'none';
 	} else {
 		// 自定义模型
 		modelSelect.value = 'custom';
-		customModelInput.value = aiConfig.model;
+		customModelInput.value = serverData.ai_config.model;
 		customModelInput.style.display = 'block';
 	}
 
 	// 更新提示语输入框
-	document.getElementById('ai-click-prompt').value = aiConfig.clickPrompt || '';
-	// document.getElementById('ai-contact-prompt').value = aiConfig.contactPrompt || '';
+	document.getElementById('ai-click-prompt').value = serverData.ai_config.clickPrompt || '';
+	// document.getElementById('ai-contact-prompt').value = serverData.ai_config.contactPrompt || '';
 
 	// 更新AI到期时间显示
 	updateAIExpireDisplay();
@@ -1933,78 +1903,40 @@ function hideAIConfigModal() {
 // 保存AI配置
 async function saveAIConfig() {
 	try {
-		aiConfig.token = document.getElementById('ai-token').value.trim();
+		serverData.ai_config.token = document.getElementById('ai-token').value.trim();
 
 		// 处理模型设置
 		const modelSelect = document.getElementById('ai-model');
 		const customModelInput = document.getElementById('ai-custom-model');
 
 		if (modelSelect.value === 'custom') {
-			aiConfig.model = customModelInput.value.trim();
+			serverData.ai_config.model = customModelInput.value.trim();
 		} else {
-			aiConfig.model = modelSelect.value;
+			serverData.ai_config.model = modelSelect.value;
 		}
 
 		// 保存提示语
-		aiConfig.clickPrompt = document.getElementById('ai-click-prompt').value.trim();
-		// aiConfig.contactPrompt = document.getElementById('ai-contact-prompt').value.trim();
-
-
+		serverData.ai_config.clickPrompt = document.getElementById('ai-click-prompt').value.trim();
 
 		// 验证提示语是否包含必要的标记符
-		if (!aiConfig.clickPrompt.includes('${候选人信息}') || !aiConfig.clickPrompt.includes('${岗位信息}')) {
+		if (!serverData.ai_config.clickPrompt.includes('${候选人信息}') || !serverData.ai_config.clickPrompt.includes('${岗位信息}')) {
 			throw new Error('查看候选人详情提示语必须包含${候选人信息}和${岗位信息}标记符');
 		}
 
-		// if (!aiConfig.contactPrompt.includes('${候选人信息}') || !aiConfig.contactPrompt.includes('${岗位信息}')) {
-		// 	throw new Error('打招呼提示语必须包含${候选人信息}和${岗位信息}标记符');
-		// }
-
 		// 验证提示语是否要求返回JSON格式
-		if (!aiConfig.clickPrompt.includes('JSON') && !aiConfig.clickPrompt.includes('json')) {
+		if (!serverData.ai_config.clickPrompt.includes('JSON') && !serverData.ai_config.clickPrompt.includes('json')) {
 			console.warn('建议在查看候选人详情提示语中要求返回JSON格式以获得更好的解释信息');
 		}
 
-		// if (!aiConfig.contactPrompt.includes('JSON') && !aiConfig.contactPrompt.includes('json')) {
-		// 	console.warn('建议在打招呼提示语中要求返回JSON格式以获得更好的解释信息');
-		// }
-
 		// 允许单独保存秘钥或模型名称，不强制要求同时输入
-		if (!aiConfig.token && !aiConfig.model) {
+		if (!serverData.ai_config.token && !serverData.ai_config.model) {
 			throw new Error('请至少输入轨迹流动Token或模型名称');
 		}
 
-		aiConfig.contactPrompt = null
+		serverData.ai_config.contactPrompt = null;
 
-		// 保存到本地存储
-		await chrome.storage.local.set({ 'ai_config': aiConfig });
-
-		// 如果绑定了手机号，同步到服务器
-		if (boundPhone) {
-			try {
-				const response = await fetch(`${API_BASE}/updatejson.php?phone=${boundPhone}`, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						ai_config: aiConfig,
-						positions,
-						currentPosition: currentPosition?.name || ''
-					})
-				});
-
-				if (!response.ok) {
-					throw new Error('服务器同步失败');
-				}
-
-				addLog('AI配置已保存并同步到服务器', 'success');
-			} catch (error) {
-				addLog('同步到服务器失败: ' + error.message, 'error');
-			}
-		} else {
-			addLog('AI配置已保存到本地', 'success');
-		}
+		// 使用统一的saveSettings方法保存所有设置，包括AI配置
+		await saveSettings();
 
 		hideAIConfigModal();
 
@@ -2012,7 +1944,7 @@ async function saveAIConfig() {
 		checkAIConnection();
 
 		// 检查余额（如果在AI页面且有token）
-		if (currentTab === 'ai' && aiConfig.token) {
+		if (currentTab === 'ai' && serverData.ai_config.token) {
 			handleBalanceCheck();
 		}
 	} catch (error) {
@@ -2028,7 +1960,7 @@ async function checkAIConnection() {
 	const statusText = document.getElementById('ai-status-text');
 
 	// 检查是否有Token或模型名称
-	if (!aiConfig.token && !aiConfig.model) {
+	if (!serverData.ai_config.token && !serverData.ai_config.model) {
 		statusIndicator.className = 'ai-status-indicator disconnected';
 		statusText.textContent = '未配置';
 		hideBalanceDisplay(); // 未配置时隐藏余额显示
@@ -2037,9 +1969,8 @@ async function checkAIConnection() {
 
 
 
-
 	// 如果有Token，尝试连接测试
-	if (aiConfig.token) {
+	if (serverData.ai_config.token) {
 		try {
 			statusIndicator.className = 'ai-status-indicator';
 			statusText.textContent = '连接中...';
@@ -2079,14 +2010,14 @@ const GUJJI_API_CONFIG = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.GUJJI_API :
 // 检查轨迹流动账号余额
 async function checkSiliconFlowBalance() {
 	try {
-		if (!aiConfig.token) {
+		if (!serverData.ai_config.token) {
 			return { success: false, error: '未配置API Token' };
 		}
 
 		const response = await fetch('https://api.siliconflow.cn/v1/user/info', {
 			method: 'GET',
 			headers: {
-				'Authorization': `Bearer ${aiConfig.token}`,
+				'Authorization': `Bearer ${serverData.ai_config.token}`,
 				'Content-Type': 'application/json'
 			}
 		});
@@ -2187,12 +2118,12 @@ function hideBalanceDisplay() {
 // 直接发送AI请求到轨迹流动
 async function sendDirectAIRequest(prompt) {
 	try {
-		const model = aiConfig.model;
+		const model = serverData.ai_config.model;
 
 		const response = await fetch(GUJJI_API_CONFIG.baseUrl, {
 			method: 'POST',
 			headers: {
-				'Authorization': `Bearer ${aiConfig.token}`,
+				'Authorization': `Bearer ${serverData.ai_config.token}`,
 				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({
@@ -2371,7 +2302,187 @@ function displayAds() {
 	}
 }
 
+// ========== 新的数据管理函数 ==========
+
+/**
+ * 从服务器获取数据并初始化插件
+ */
+async function initializeFromServer() {
+	try {
+		// 加载已绑定的手机号
+		const stored = await chrome.storage.local.get('hr_assistant_phone');
+		if (stored.hr_assistant_phone) {
+			boundPhone = stored.hr_assistant_phone;
+			document.getElementById('phone-input').value = boundPhone;
+			document.getElementById('ai-phone-input').value = boundPhone;
+
+			// 从服务器获取数据
+			await syncSettingsFromServer();
+		} else {
+			// 如果没有绑定手机号，从本地存储加载数据
+			await loadSettingsFromLocal();
+		}
+
+		// 检查并设置AI到期时间
+		await checkAndSetAIExpireTime();
+
+		// 更新所有UI组件
+		updateAllUI();
+
+		// 设置定时器，每小时更新一次到期时间显示
+		setInterval(() => {
+			if (currentTab === 'ai') {
+				updateAIExpireDisplay();
+			}
+		}, 60 * 60 * 1000);
+
+	} catch (error) {
+		console.error('初始化失败:', error);
+		addLog('初始化失败: ' + error.message, 'error');
+	}
+}
+
+/**
+ * 从本地存储加载设置
+ */
+async function loadSettingsFromLocal() {
+	try {
+		const result = await chrome.storage.local.get(['hr_assistant_settings', 'ai_expire_time', 'ai_config']);
+
+		if (result.hr_assistant_settings) {
+			const localSettings = result.hr_assistant_settings;
+
+			// 合并本地设置到serverData
+			if (localSettings.positions) serverData.positions = localSettings.positions;
+			if (localSettings.currentPosition) serverData.currentPosition = localSettings.currentPosition;
+			if (localSettings.isAndMode !== undefined) serverData.isAndMode = localSettings.isAndMode;
+			if (localSettings.matchLimit) serverData.matchLimit = localSettings.matchLimit;
+			if (localSettings.enableSound !== undefined) serverData.enableSound = localSettings.enableSound;
+			if (localSettings.scrollDelayMin) serverData.scrollDelayMin = localSettings.scrollDelayMin;
+			if (localSettings.scrollDelayMax) serverData.scrollDelayMax = localSettings.scrollDelayMax;
+		}
+
+		if (result.ai_expire_time) {
+			serverData.ai_expire_time = result.ai_expire_time;
+		}
+
+		if (result.ai_config) {
+			serverData.ai_config = { ...serverData.ai_config, ...result.ai_config };
+		}
+
+	} catch (error) {
+		console.error('从本地加载设置失败:', error);
+	}
+}
+
+/**
+ * 检查并设置AI到期时间
+ */
+async function checkAndSetAIExpireTime() {
+	// 检查服务器返回的数据是否有到期日期
+	if (!serverData.ai_expire_time) {
+		// 如果没有到期日期，设置新的到期日期
+		const expireDate = new Date();
+		expireDate.setDate(expireDate.getDate() + 3);
+		serverData.ai_expire_time = expireDate.toISOString().split('T')[0];
+
+		// 如果绑定了手机号，更新到服务器
+		if (boundPhone) {
+			try {
+				await updateServerData();
+				addLog('已设置AI版本3天试用期', 'success');
+			} catch (error) {
+				addLog('设置AI到期时间失败: ' + error.message, 'error');
+			}
+		} else {
+			// 保存到本地
+			await chrome.storage.local.set({ 'ai_expire_time': serverData.ai_expire_time });
+			addLog('已设置AI版本3天试用期', 'success');
+		}
+	}
+}
+
+/**
+ * 更新服务器数据
+ */
+async function updateServerData() {
+	if (!boundPhone) {
+		throw new Error('未绑定手机号，无法更新服务器数据');
+	}
+
+	const response = await fetch(`${API_BASE}/updatejson.php?phone=${boundPhone}`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(serverData, null, 2)
+	});
+
+	if (!response.ok) {
+		throw new Error(`服务器响应错误: ${response.status}`);
+	}
+
+	const result = await response.json();
+	if (result.status !== 'success') {
+		// 如果服务器返回的消息是"配置已保存"，这实际上是成功的操作
+		if (result.message === '配置已保存') {
+			return; // 成功，不抛出错误
+		}
+		throw new Error(result.message || '更新服务器数据失败');
+	}
+}
+
+/**
+ * 更新所有UI组件
+ */
+function updateAllUI() {
+	// 更新AI配置
+	updateAIConfigUI();
+
+	// 更新岗位数据
+	updatePositionsUI();
+
+	// 更新到期时间显示
+	updateAIExpireDisplay();
+
+	// 更新其他设置
+	updateOtherSettingsUI();
+}
 
 
 
+/**
+ * 更新岗位数据UI
+ */
+function updatePositionsUI() {
+	// 调用renderPositions来更新岗位数据UI
+	renderPositions();
+}
 
+/**
+ * 更新其他设置UI
+ */
+function updateOtherSettingsUI() {
+	// 更新匹配限制设置
+	const matchLimitInput = document.getElementById('match-limit');
+	if (matchLimitInput && serverData.matchLimit !== undefined) {
+		matchLimitInput.value = serverData.matchLimit;
+	}
+
+	// 更新提示音设置
+	const enableSoundCheckbox = document.getElementById('enable-sound');
+	if (enableSoundCheckbox && serverData.enableSound !== undefined) {
+		enableSoundCheckbox.checked = serverData.enableSound;
+	}
+
+	// 更新延迟设置
+	const delayMinInput = document.getElementById('delay-min');
+	if (delayMinInput && serverData.scrollDelayMin !== undefined) {
+		delayMinInput.value = serverData.scrollDelayMin;
+	}
+
+	const delayMaxInput = document.getElementById('delay-max');
+	if (delayMaxInput && serverData.scrollDelayMax !== undefined) {
+		delayMaxInput.value = serverData.scrollDelayMax;
+	}
+}
