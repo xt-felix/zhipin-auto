@@ -56,7 +56,6 @@ async function fetchRankingData() {
 
 // 监听来自content script的消息
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-    console.log('Background收到消息:', message);
     startKeepAlive(); // 每次收到消息时重置保活定时器
 
     // 对于异步操作，需要先返回true

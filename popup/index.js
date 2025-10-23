@@ -12,6 +12,11 @@ let serverData = {
 3. 必须返回JSON格式，包含decision和reason两个字段。
 4. decision字段只能是"是"或"否"。
 5. reason字段是决策原因，10个字以内。
+6. 如果岗位要求中包含"经验"，则必须考虑候选人的工作经验。
+7. 如果岗位要求中包含"学历"，则必须考虑候选人的学历。
+8. 如果候选人信息中没有工作经历。那很可能只是基础信息。这时岗位信息中某个条件、但是候选人信息中没提到的 你应该无视这个条件。
+9. 你应该主动分析 岗位信息是不是属于高要求的岗位、如果是。则你需要详细严格筛选候选人信息。如果是要求低的普通岗位。那就简单筛选
+
 
 岗位要求：
 \${岗位信息}
@@ -377,13 +382,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 			hideAIConfigModal();
 		});
 
-		document.getElementById('ai-config-save').addEventListener('click', () => {
-			saveAIConfig();
-		});
-
-		document.getElementById('ai-config-save2').addEventListener('click', () => {
-			saveAIConfig();
-		});
+		// 为存在的保存按钮添加事件监听器
+		const aiConfigSave2 = document.getElementById('ai-config-save2');
+		if (aiConfigSave2) {
+			aiConfigSave2.addEventListener('click', () => {
+				saveAIConfig();
+			});
+		}
 
 
 		// AI配置表单事件
@@ -396,6 +401,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 				customModelInput.style.display = 'none';
 			}
 		});
+
+		// AI提示语自动保存功能
+		const aiClickPrompt = document.getElementById('ai-click-prompt');
+		if (aiClickPrompt) {
+			let aiPromptSaveTimeout;
+			aiClickPrompt.addEventListener('input', () => {
+				// 清除之前的定时器
+				clearTimeout(aiPromptSaveTimeout);
+				
+				// 设置新的定时器，延迟保存以避免频繁触发
+				aiPromptSaveTimeout = setTimeout(async () => {
+					try {
+						// 更新serverData中的提示语
+						serverData.ai_config.clickPrompt = document.getElementById('ai-click-prompt').value.trim();
+						
+						// 保存设置
+						await saveSettings();
+						
+						// 在日志中显示保存信息
+						addLog('AI提示语已自动保存', 'info');
+					} catch (error) {
+						console.error('自动保存AI提示语失败:', error);
+						addLog('自动保存AI提示语失败: ' + error.message, 'error');
+					}
+				}, 1000); // 1秒延迟保存
+			});
+		}
 
 		// 加载已绑定的手机号
 		const stored = await chrome.storage.local.get('hr_assistant_phone');
@@ -572,11 +604,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 		}
 
 		// 监听设置变化
-		matchLimitInput.addEventListener('change', () => {
-			matchLimit = parseInt(matchLimitInput.value) || 10;
-			saveSettings();
-			addLog(`设置匹配暂停数量: ${matchLimit}`, 'info');
+	matchLimitInput.addEventListener('change', () => {
+		matchLimit = parseInt(matchLimitInput.value) || 10;
+		saveSettings();
+		addLog(`设置匹配暂停数量: ${matchLimit}`, 'info');
+	});
+
+	// AI优化岗位描述按钮事件
+	const aiOptimizeBtn = document.getElementById('ai-optimize-job-description');
+	if (aiOptimizeBtn) {
+		aiOptimizeBtn.addEventListener('click', async () => {
+			await optimizeJobDescriptionWithAI();
 		});
+	}
 
 		enableSoundCheckbox.addEventListener('change', (e) => {
 			enableSound = e.target.checked;
@@ -751,7 +791,7 @@ async function startAutoScroll() {
 		// 根据当前模式决定发送的消息类型
 		if (currentTab === 'ai') {
 			// AI模式 - 检查到期时间
-			if (!aiExpireTime) {
+			if (!serverData.ai_expire_time) {
 				// 首次使用，先尝试从服务器获取，如果没有再设置新的
 				await initializeAIExpireTime();
 			} else if (checkAIExpiration()) {
@@ -1017,8 +1057,6 @@ chrome.runtime.sendMessage({ message: "hello" }, function (response) {
 
 // 修改 chrome.runtime.onMessage 监听器
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-	// console.log('插件收到页面收到消息:', message.data.message);
-	// console.log('插件收到页面收到消息:', message.type);
 
 	if (message.action === 'CHECK_AI_EXPIRATION') {
 		// 检查AI到期时间
@@ -1654,44 +1692,7 @@ async function syncSettingsFromServer() {
 	}
 }
 
-// 同步设置到服务器
-async function syncSettingsToServer() {
-	try {
-		if (!boundPhone) return;
 
-		const settings = {
-			positions,
-			currentPosition,
-			isAndMode,
-			matchLimit,
-			enableSound,
-			scrollDelayMin,
-			scrollDelayMax,
-			ai_config: aiConfig,
-			ai_expire_time: aiExpireTime
-		};
-		console.log(settings);
-		console.log("保存用户配置");
-
-
-		const response = await fetch(`${API_BASE}/updatejson.php?phone=${boundPhone}`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(settings, null, 2) // 使用格式化参数保持中文原样
-		});
-
-		if (!response.ok) {
-			throw new Error('保存配置失败');
-		}
-
-		addLog('配置已同步到服务器', 'success');
-	} catch (error) {
-		console.error('同步配置失败:', error);
-		addLog('同步配置失败: ' + error.message, 'error');
-	}
-}
 
 // AI相关函数
 async function switchTab(tabName) {
@@ -1967,8 +1968,6 @@ async function checkAIConnection() {
 		return;
 	}
 
-
-
 	// 如果有Token，尝试连接测试
 	if (serverData.ai_config.token) {
 		try {
@@ -1978,7 +1977,6 @@ async function checkAIConnection() {
 			// 直接调用轨迹流动API进行测试
 			const testPrompt = '你好，这是一个连接测试。请回复"连接成功"。';
 			const result = await sendDirectAIRequest(testPrompt);
-
 
 			if (result.success) {
 				statusIndicator.className = 'ai-status-indicator connected';
@@ -2484,5 +2482,73 @@ function updateOtherSettingsUI() {
 	const delayMaxInput = document.getElementById('delay-max');
 	if (delayMaxInput && serverData.scrollDelayMax !== undefined) {
 		delayMaxInput.value = serverData.scrollDelayMax;
+	}
+}
+
+// AI优化岗位描述函数
+async function optimizeJobDescriptionWithAI() {
+	const jobDescriptionTextarea = document.getElementById('job-description');
+	const jobDescription = jobDescriptionTextarea.value.trim();
+
+	// 检查是否有输入内容
+	if (!jobDescription) {
+		addLog('请先输入岗位要求内容', 'warning');
+		return;
+	}
+
+	// 检查AI配置
+	if (!serverData.ai_config || !serverData.ai_config.token) {
+		addLog('请先配置AI设置（需要Token）', 'error');
+		return;
+	}
+
+	// 显示正在处理的状态
+	const optimizeBtn = document.getElementById('ai-optimize-job-description');
+	const originalBtnText = optimizeBtn.innerHTML;
+	optimizeBtn.innerHTML = '<span class="spinner"></span>AI优化中...';
+	optimizeBtn.disabled = true;
+
+	try {
+		addLog('正在使用AI优化岗位要求...', 'info');
+
+		// 构造AI提示语
+		const prompt = `你是一个资深的HR专家和招聘文案优化师。请优化以下岗位要求，使其：
+1. 简单明了，避免复杂的语言
+2. 结构更清晰，便于ai模型理解
+3. 包含关键信息：岗位要求
+4. 符合ai模型的输入要求，不能包含任何特殊字符或格式
+5. 理解岗位要求中的所有条件，不能忽略任何重要信息
+6. 必须 1234点 这样一行一个。
+
+目的:这是一份岗位要求，你需要根据原始岗位要求优化，使其符合ai模型的输入要求。
+请直接返回优化后的岗位要求内容，不要添加其他说明。
+
+原始岗位要求：
+${jobDescription}`;
+
+		// 调用AI接口
+		const result = await sendDirectAIRequest(prompt);
+
+		if (result.success) {
+			// 更新岗位描述文本框
+			jobDescriptionTextarea.value = result.response;
+			
+			// 更新服务器数据
+			if (serverData.currentPosition) {
+				serverData.currentPosition.description = result.response;
+				await saveSettings();
+			}
+			
+			addLog('岗位要求优化完成', 'success');
+		} else {
+			addLog(`AI优化失败: ${result.error}`, 'error');
+		}
+	} catch (error) {
+		console.error('AI优化岗位要求失败:', error);
+		addLog(`AI优化失败: ${error.message}`, 'error');
+	} finally {
+		// 恢复按钮状态
+		optimizeBtn.innerHTML = originalBtnText;
+		optimizeBtn.disabled = false;
 	}
 }

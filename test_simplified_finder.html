@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简化版元素查找函数测试</title>
+</head>
+<body>
+    <!-- 模拟智联招聘的简历页面结构 -->
+    <div class="resume-container">
+        <div class="resume-basic-new__meta-item">姓名: 张三</div>
+        <div class="resume-basic-new__meta-item">年龄: 28岁</div>
+        <div class="resume-basic-new__meta-item">学历: 本科</div>
+        <div class="resume-basic-new__meta-item">学校: 清华大学</div>
+    </div>
+
+    <script>
+        // 简化版的元素查找函数
+        function findElementsByMultipleMethods(selector, options = {}) {
+            // 只使用标准的querySelectorAll方法
+            try {
+                const elements = document.querySelectorAll(selector);
+                if (elements.length > 0) {
+                    console.log(`找到 ${elements.length} 个元素`);
+                    return { elements: Array.from(elements), method: 'querySelectorAll' };
+                }
+            } catch (e) {
+                console.log(`查询失败:`, e);
+            }
+            
+            console.log(`未能找到目标元素`);
+            return { elements: [], method: 'none', message: '未找到元素' };
+        }
+
+        // 测试函数
+        function runTest() {
+            console.log("开始测试简化版元素查找函数...");
+            
+            // 测试1: 基本类名选择器
+            console.log("\n=== 测试1: 基本类名选择器 ===");
+            const result1 = findElementsByMultipleMethods('.resume-basic-new__meta-item');
+            console.log("结果:", result1);
+            
+            // 测试2: 不存在的选择器
+            console.log("\n=== 测试2: 不存在的选择器 ===");
+            const result2 = findElementsByMultipleMethods('.non-existent-class');
+            console.log("结果:", result2);
+            
+            console.log("\n测试完成!");
+        }
+
+        // 页面加载完成后运行测试
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log("页面加载完成，开始运行测试...");
+            runTest();
+        });
+    </script>
+</body>
+</html>

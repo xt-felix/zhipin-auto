@@ -68,7 +68,6 @@ async function initializeParser() {
 
 
         const url = window.location.href;
-        console.log('当前URL:', url);
         const extensionUrl = chrome.runtime.getURL('');
 
         if (url.includes('zhipin.com')) {
@@ -79,11 +78,9 @@ async function initializeParser() {
             // showNotification('BOSS直聘初始化完成，请前往推荐牛人页面使用-GoodHR', 'status');
             // 检查是否在iframe中
             const isInIframe = window !== window.top;
-            console.log('是否在iframe中:', isInIframe);
             // 跳过 about:blank 和非主框架页面
 
             if (!isInIframe) {
-                console.log('在主框架中创建询问框');
                 createDraggablePrompt(); // 只在主框架中创建询问框
             }
 
@@ -522,8 +519,6 @@ async function processElement(element, doc) {
                 let clickCandidate = false;
                 simpleCandidateInfo = await currentParser.getSimpleCandidateInfo(candidate);
 
-                console.log("第一次数据组装的结果");
-                console.log(simpleCandidateInfo);
                 if (currentParser.aiMode) {
                     // AI模式：基于简单信息决定是否查看详细信息
 
@@ -532,7 +527,10 @@ async function processElement(element, doc) {
                     AiMsg = msg
                     clickCandidate = isok;
                     if (clickCandidate) {
+                    addHighlightReason(targetElement, '已打招呼(' + AiMsg + ')', '#4caf50');
 
+                    }else{
+                        addHighlightReason(targetElement, '未打招呼(' + AiMsg + ')', '#9e9e9e');
                     }
                 } else {
                     // 免费模式：通过概率决定
@@ -543,8 +541,6 @@ async function processElement(element, doc) {
                 let shouldContact = false;
                 if (clickCandidate) {
                     // 检查是否有打开的候选人页面
-                    const maxWaitTime = 10000; // 最大等待时间10秒
-                    const startTime = Date.now();
                     //关闭候选人弹框
 
                     const clicked = await currentParser.clickCandidateDetail(element);
@@ -558,8 +554,6 @@ async function processElement(element, doc) {
                             colleagueContactedInfo = await currentParser.queryColleagueContactedInfo(candidate);
                             simpleCandidateInfo += colleagueContactedInfo;
 
-                            console.log("查询同事沟通过候选人的信息");
-                            console.log(simpleCandidateInfo);
                         } catch (error) {
                             console.error('查询同事沟通过候选人的信息失败:', error);
                         }
@@ -570,6 +564,7 @@ async function processElement(element, doc) {
                             let data2 = currentParser.extractCandidates2(candidate);
                             if (data2 != null) {
                                 simpleCandidateInfo = data2
+                                
                             }
                         } catch (error) {
                             console.error('第二次组装信息失败:', error);
@@ -600,7 +595,6 @@ async function processElement(element, doc) {
 
                         } else {
                             // 免费模式：使用关键词筛选
-                            // console.log('使用关键词筛选候选人:', simpleCandidateInfo);
                             shouldContact = currentParser.filterCandidate(simpleCandidateInfo);
                         }
 
@@ -617,6 +611,7 @@ async function processElement(element, doc) {
                     // 如果不查看详情，直接使用关键词筛选
                     if (!currentParser.aiMode) {
                         // console.log('使用关键词筛选候选人:', candidate.name);
+
                         shouldContact = currentParser.filterCandidate(simpleCandidateInfo);
                     }
                 }
@@ -1513,10 +1508,10 @@ function handleWindowMinimized() {
             });
 
             // 弹出警告提示
-            alert('GoodHR提醒您：为了你的账号安全，请勿在最小化时运行。\n\n如果需要做别的，你可以新开一个浏览器窗口。\n\n插件已自动暂停，请恢复窗口后重新启动。');
+            // alert('GoodHR提醒您：为了你的账号安全，请勿在最小化时运行。\n\n如果需要做别的，你可以新开一个浏览器窗口。\n\n插件已自动暂停，请恢复窗口后重新启动。');
 
             // 停止自动滚动
-            stopAutoScroll();
+            // stopAutoScroll();
         }
     } catch (error) {
         console.error('处理窗口最小化时出错:', error);

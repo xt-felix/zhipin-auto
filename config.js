@@ -10,7 +10,7 @@ const CONFIG = {
         temperature: 0.1
     },
     // 版本信息
-    VERSION: '2.6',
+    VERSION: '2.6.1',
 
     // 默认设置
     DEFAULTS: {

@@ -33,10 +33,8 @@ class ResumeDownloader {
 
 // 监听来自popup的消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log('收到消息:', message);
     
     if (!window.resumeDownloader) {
-        console.log('创建下载器实例');
         window.resumeDownloader = new ResumeDownloader();
         window.resumeDownloader.initDownloader(window.location.hostname);
     }

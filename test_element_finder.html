@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>元素查找函数测试</title>
+</head>
+<body>
+    <!-- 模拟智联招聘的简历页面结构 -->
+    <div class="resume-container">
+        <div class="resume-basic-new__meta-item">姓名: 张三</div>
+        <div class="resume-basic-new__meta-item">年龄: 28岁</div>
+        <div class="resume-basic-new__meta-item">学历: 本科</div>
+        <div class="resume-basic-new__meta-item">学校: 清华大学</div>
+    </div>
+
+    <div class="alternative-structure">
+        <div class="talent-basic-info__meta-item">姓名: 李四</div>
+        <div class="talent-basic-info__meta-item">年龄: 25岁</div>
+    </div>
+
+    <div class="text-search-test">
+        <div>候选人基本信息</div>
+        <div>姓名: 王五</div>
+        <div>年龄: 30岁</div>
+        <div>学历: 硕士</div>
+    </div>
+
+    <script>
+        // 复制我们实现的通用元素查找函数到这个测试文件中
+        function findElementsByMultipleMethods(selector, options = {}) {
+            const {
+                tagName = '*',
+                includeTextSearch = false,
+                textKeywords = [],
+                maxResults = 50
+            } = options;
+            
+            let elements = [];
+            let methodUsed = '';
+            
+            try {
+                // 方法1: 使用querySelectorAll
+                if (selector) {
+                    elements = Array.from(document.querySelectorAll(selector));
+                    if (elements.length > 0) {
+                        methodUsed = 'querySelectorAll';
+                        return {
+                            elements: elements.slice(0, maxResults),
+                            method: methodUsed,
+                            message: `通过querySelectorAll找到${elements.length}个元素`
+                        };
+                    }
+                }
+                
+                // 方法2: 使用getElementsByClassName (如果selector是类名)
+                if (selector && selector.startsWith('.')) {
+                    const className = selector.substring(1);
+                    elements = Array.from(document.getElementsByClassName(className));
+                    if (elements.length > 0) {
+                        methodUsed = 'getElementsByClassName';
+                        return {
+                            elements: elements.slice(0, maxResults),
+                            method: methodUsed,
+                            message: `通过getElementsByClassName找到${elements.length}个元素`
+                        };
+                    }
+                }
+                
+                // 方法3: 使用属性选择器
+                if (selector && selector.includes('[')) {
+                    elements = Array.from(document.querySelectorAll(selector));
+                    if (elements.length > 0) {
+                        methodUsed = 'attributeSelector';
+                        return {
+                            elements: elements.slice(0, maxResults),
+                            method: methodUsed,
+                            message: `通过属性选择器找到${elements.length}个元素`
+                        };
+                    }
+                }
+                
+                // 方法4: 使用XPath
+                if (selector) {
+                    try {
+                        const xpathResult = document.evaluate(
+                            `//${tagName}[contains(@class, '${selector.replace('.', '')}')]`,
+                            document,
+                            null,
+                            XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+                            null
+                        );
+                        
+                        const xpathElements = [];
+                        for (let i = 0; i < xpathResult.snapshotLength; i++) {
+                            xpathElements.push(xpathResult.snapshotItem(i));
+                        }
+                        
+                        if (xpathElements.length > 0) {
+                            methodUsed = 'xpath';
+                            return {
+                                elements: xpathElements.slice(0, maxResults),
+                                method: methodUsed,
+                                message: `通过XPath找到${xpathElements.length}个元素`
+                            };
+                        }
+                    } catch (e) {
+                        console.log("XPath查询失败:", e);
+                    }
+                }
+                
+                // 方法5: 遍历DOM树查找
+                try {
+                    const allElements = Array.from(document.getElementsByTagName(tagName));
+                    const matchedElements = [];
+                    
+                    for (let element of allElements) {
+                        const className = element.className || '';
+                        const selectorWithoutDot = selector ? selector.replace('.', '') : '';
+                        
+                        if (className.includes(selectorWithoutDot)) {
+                            matchedElements.push(element);
+                        }
+                    }
+                    
+                    if (matchedElements.length > 0) {
+                        methodUsed = 'domTraversal';
+                        return {
+                            elements: matchedElements.slice(0, maxResults),
+                            method: methodUsed,
+                            message: `通过DOM遍历找到${matchedElements.length}个元素`
+                        };
+                    }
+                } catch (e) {
+                    console.log("DOM遍历查询失败:", e);
+                }
+                
+                // 方法6: 文本内容匹配
+                if (includeTextSearch && textKeywords.length > 0) {
+                    try {
+                        const allElements = Array.from(document.getElementsByTagName(tagName));
+                        const matchedElements = [];
+                        
+                        for (let element of allElements) {
+                            const textContent = element.textContent || '';
+                            
+                            // 检查是否包含任何关键词
+                            const hasKeyword = textKeywords.some(keyword => 
+                                textContent.includes(keyword)
+                            );
+                            
+                            if (hasKeyword) {
+                                matchedElements.push(element);
+                            }
+                        }
+                        
+                        if (matchedElements.length > 0) {
+                            methodUsed = 'textSearch';
+                            return {
+                                elements: matchedElements.slice(0, maxResults),
+                                method: methodUsed,
+                                message: `通过文本搜索找到${matchedElements.length}个元素`
+                            };
+                        }
+                    } catch (e) {
+                        console.log("文本搜索失败:", e);
+                    }
+                }
+                
+                // 如果所有方法都失败了
+                return {
+                    elements: [],
+                    method: 'none',
+                    message: '未能找到任何元素'
+                };
+                
+            } catch (error) {
+                console.error("元素查找过程中发生错误:", error);
+                return {
+                    elements: [],
+                    method: 'error',
+                    message: `查找过程中发生错误: ${error.message}`
+                };
+            }
+        }
+
+        // 测试函数
+        function runTests() {
+            console.log("开始测试元素查找函数...");
+            
+            // 测试1: 基本类名选择器
+            console.log("\n=== 测试1: 基本类名选择器 ===");
+            const result1 = findElementsByMultipleMethods('.resume-basic-new__meta-item');
+            console.log("结果:", result1);
+            
+            // 测试2: 替代类名
+            console.log("\n=== 测试2: 替代类名 ===");
+            const result2 = findElementsByMultipleMethods('.talent-basic-info__meta-item');
+            console.log("结果:", result2);
+            
+            // 测试3: 文本搜索
+            console.log("\n=== 测试3: 文本搜索 ===");
+            const result3 = findElementsByMultipleMethods('', {
+                includeTextSearch: true,
+                textKeywords: ['姓名', '年龄', '学历']
+            });
+            console.log("结果:", result3);
+            
+            // 测试4: 不存在的选择器
+            console.log("\n=== 测试4: 不存在的选择器 ===");
+            const result4 = findElementsByMultipleMethods('.non-existent-class');
+            console.log("结果:", result4);
+        }
+
+        // 页面加载完成后运行测试
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log("页面加载完成，开始运行测试...");
+            runTests();
+        });
+    </script>
+</body>
+</html>

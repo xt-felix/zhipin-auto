@@ -213,6 +213,30 @@
             background: #1557b0;
         }
 
+        .keyword-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 转圈动画 */
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         .keyword-list {
             display: flex;
             flex-wrap: wrap;
@@ -606,7 +630,7 @@
         <!-- 选项卡 -->
         <div class="tab-container">
             <div class="tab active" data-tab="free">免费版</div>
-            <div class="tab" data-tab="ai">AI高级版</div>
+            <div class="tab" data-tab="ai">AI高级版(试用3天)</div>
         </div>
 
         <!-- 免费版内容 -->
@@ -737,18 +761,23 @@
                     ↓ 可以往下滑动查看更多设置 ↓
                 </div>
                 <div class="filter-group">
-                    <label class="title">账号绑定</label>
+                    <label class="title">账号绑定(新用户试用3天)</label>
                     <div class="position-input-group">
                         <input type="text" id="ai-phone-input" class="keyword-input" placeholder="输入手机号以同步配置">
                         <button id="ai-bind-phone" class="keyword-btn">绑定</button>
                     </div>
                     <div style="font-size: 12px; color: #666; margin-top: 4px;">
-                        * 绑定手机号后可以从服务器同步你的配置(无需验证)
+                        * 绑定手机号后可以从服务器同步你的配置(无需验证)(新用户绑定后自动试用3天)
                     </div>
                 </div>
 
                 <div class="filter-group">
-                    <label class="title">AI状态</label>
+                     <div style=" margin-bottom: 10px;display: flex;align-items: center;">
+                                            <label class="title" style="margin-bottom:0px">AI状态</label>
+
+                                            <span style="font-size: 11px; color: #666;margin-left: 10px;"> 价格25/月，80元/永久<a href="https://goodhr.58it.cn" target="_blank">咨询购买</a></span>
+                        
+                    </div>
                     <div class="ai-status">
                         <div class="ai-status-indicator" id="ai-status-indicator"></div>
                         <span id="ai-status-text">未连接</span>
@@ -756,14 +785,12 @@
                     </div>
                     <div class="ai-balance-info" id="ai-balance-info"
                         style="font-size: 11px; color: #666; margin-top: 5px; display: none;">
-                        <span id="ai-balance-text">轨迹流动余额: --</span>
+                        <span id="ai-balance-text">轨迹流动余额: --</span>   <span >* 获取Token请访问：<a href="https://goodhr.58it.cn/describe.html" target="_blank">AI配置教程</a></span>
                     </div>
                     <div style="font-size: 11px; color: #666; margin-bottom: 10px;">
-                        * 获取Token请访问：<a href="https://goodhr.58it.cn/describe.html" target="_blank">AI配置教程</a>
+                        
                     </div>
-                    <div style="font-size: 11px; color: #666; margin-bottom: 10px;">
-                        * 价格20/月，70元/永久<a href="https://goodhr.58it.cn" target="_blank">咨询购买</a>
-                    </div>
+                   
                 </div>
 
 
@@ -778,9 +805,12 @@
                 </div>
 
                 <div class="filter-group" id="ai-job-description-group" style="display: none;">
-                    <label class="title">岗位说明</label>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <label class="title">岗位要求</label>
+                        <button id="ai-optimize-job-description" class="keyword-btn" style="font-size: 12px; padding: 4px 8px;">AI优化</button>
+                    </div>
                     <textarea id="job-description" class="job-description"
-                        placeholder="请详细描述岗位要求，包括：&#10;1. 岗位职责&#10;2. 任职要求&#10;3. 技能要求&#10;4. 经验要求&#10;5. 其他要求&#10;&#10;AI将根据这些信息智能判断候选人是否合适"></textarea>
+                        placeholder="请详细描述岗位要求，包括：&#10;1. 任职要求&#10;2. 技能要求&#10;3. 经验要求&#10;4. 其他要求&#10;&#10;AI将根据这些信息智能判断候选人是否合适&#10;输入岗位要求后点击右上角的AI优化按钮，系统会根据岗位要求优化岗位描述"></textarea>
                 </div>
 
                 <div class="filter-group">
@@ -817,7 +847,7 @@
 
 
 
-                    <button class="keyword-btn" id="ai-config-save">保存配置</button>
+
                 </div>
 
 

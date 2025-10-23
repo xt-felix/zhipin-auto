@@ -44,9 +44,29 @@ class LiepinParser extends BaseParser {
         return element;
     }
 
+    /**
+     * 构建第一次候选人信息
+     * @param {*} element
+     * @returns
+     */
+    getSimpleCandidateInfo(data) {
+        console.log("智联的信息");
+        let data2 = ""
+        data2 += "姓名：" + data.name + "\n"
+        data2 += "年龄：" + data.age + "\n"
+        data2 += "学历：" + data.education + "\n"
+        data2 += "学校：" + data.university + "\n"
+        data2 += "描述：" + data.description + "\n"
 
+        data.extraInfo.forEach(item => {
+
+            data2 += "额外信息：" + item.type + " " + item.value + "\n"
+
+        });
+        return data2;
+    }
     extractCandidates2(data) {
-        return data
+        return null
     }
 
     extractCandidates(elements = null) {
