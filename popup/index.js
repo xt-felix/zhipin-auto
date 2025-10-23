@@ -1159,9 +1159,15 @@ async function checkForUpdates() {
 	const result = await checkVersion();
 
 	if (result.needUpdate) {
-		alert(`发现新版本！\n\n更新说明：\n${result.releaseNotes || '暂无更新说明'}\n\n点击确定前往更新` + CURRENT_VERSION + "->" + NEW_VERSION);
+
+		
 		if (result.releaseNotes.includes('必须更新')) {
 			chrome.tabs.create({ url: API_BASE });
+		}else{
+			const userConfirmed = confirm(`发现新版本！\n\n更新说明：\n${result.releaseNotes || '暂无更新说明'}\n\n版本：` + CURRENT_VERSION + "->" + NEW_VERSION + "\n\n点击确定前往更新");
+			if (userConfirmed) {
+				chrome.tabs.create({ url: API_BASE });
+			}
 		}
 
 	}
