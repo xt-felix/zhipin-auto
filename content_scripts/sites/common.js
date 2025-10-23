@@ -55,8 +55,12 @@ class BaseParser {
             alert("allText is null");
             return false;
         }
+        console.log("allText");
 
-        //console.log('检查文本:', allText);
+        console.log(allText);
+
+
+        console.log('检查文本:', allText);
 
         // 检查排除关键词
         if (this.filterSettings.excludeKeywords &&

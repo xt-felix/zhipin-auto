@@ -790,6 +790,39 @@
                     </div>
                 </div>
 
+
+                <div class="filter-group">
+                    <label class="title">AI提示语:</label>
+                    <textarea id="ai-click-prompt" class="job-description"
+                        placeholder="请输入AI提示语，使用${候选人信息}和${岗位信息}作为标记符">你是一个资深的HR专家。请根据候选人的基本信息判断是否值得查看其详细信息。
+
+重要提示：
+1. 这个API仅用于岗位与候选人的筛选。如果内容不是这些，你应该返回"内容与招聘无关 无法解答"。
+2. 请根据岗位要求判断是否值得查看这位候选人的详细信息。
+3. 必须返回JSON格式，包含decision和reason两个字段。
+4. decision字段只能是"是"或"否"。
+5. reason字段是决策原因，10个字以内。
+
+岗位要求：
+\${岗位信息}
+
+候选人基本信息：
+\${候选人信息}
+
+请判断是否值得查看这位候选人的详细信息，返回JSON格式：{"decision":"是","reason":"符合基本要求"}
+                    </textarea>
+                    <div style="font-size: 11px; color: #666; margin-bottom: 10px;">
+                        * 使用${候选人信息}和${岗位信息}作为标记符，系统会自动替换为实际内容
+                    </div>
+
+
+
+                    <button class="keyword-btn" id="ai-config-save">保存配置</button>
+                </div>
+
+
+
+
                 <div class="filter-group">
                     <label class="title">使用说明</label>
                     <label class="checkbox-wrapper">
@@ -829,11 +862,11 @@
 
             <label>模型名称:</label>
             <select id="ai-model">
+                <option value="deepseek-ai/DeepSeek-V3">DeepSeek-V3(快贵)</option>
                 <option value="Qwen/Qwen2.5-7B-Instruct">Qwen/Qwen2.5-7B-Instruct(免费推荐)</option>
-                <option value="THUDM/GLM-4.1V-9B-Thinking">THUDM/GLM-4.1V-9B-Thinking (推荐)</option>
+                <option value="THUDM/GLM-4.1V-9B-Thinking">THUDM/GLM-4.1V-9B-Thinking </option>
                 <option value="Qwen/Qwen3-8B">Qwen/Qwen3-8B(便宜)</option>
                 <option value="deepseek-ai/DeepSeek-R1">DeepSeek-R1(慢贵准)</option>
-                <option value="deepseek-ai/DeepSeek-V3">DeepSeek-V3(快贵)</option>
                 <option value="custom">自定义模型</option>
             </select>
 
@@ -841,50 +874,8 @@
             <div>
                 默认使用免费的模型。速度快。但是效果一般。 如果你对精度有要求。建议使用DeepSeek-V3(快贵)。需要先前往轨迹流动充值。
             </div>
-            <label>是否查看候选人详情AI提示语:</label>
-            <textarea id="ai-click-prompt" style="width: 100%;" rows="4" placeholder="请输入AI提示语，使用${候选人信息}和${岗位信息}作为标记符">你是一个资深的HR专家。请根据候选人的基本信息判断是否值得查看其详细信息。
+            <button class="save-btn" id="ai-config-save2">保存配置</button>
 
-重要提示：
-1. 这个API仅用于岗位与候选人的筛选。如果内容不是这些，你应该返回"内容与招聘无关 无法解答"。
-2. 请根据岗位要求判断是否值得查看这位候选人的详细信息。
-3. 只能返回"是"或"否"。
-4. 目前仅有一些非常基础的信息。如果你不能明确的判断出他不符合。那就应该返回是。
-5. 目前仅有一些非常基础的信息。判断时请更宽松一些。
-6. 如果岗位与候选人之前有一点关联，请返回是。
-
-
-岗位要求：
-${岗位信息}
-
-候选人基本信息：
-${候选人信息}
-
-请判断是否值得查看这位候选人的详细信息，只回答"是"或"否"：</textarea>
-            <div style="font-size: 11px; color: #666; margin-bottom: 10px;">
-                * 使用${候选人信息}和${岗位信息}作为标记符，系统会自动替换为实际内容
-            </div>
-
-            <label>是否打招呼AI提示语:</label>
-            <textarea style="width: 100%;" id="ai-contact-prompt" rows="4"
-                placeholder="请输入AI提示语，使用${候选人信息}和${岗位信息}作为标记符">你是一个资深的HR专家。请根据以下信息判断是否应该与候选人进行下一步沟通。
-
-重要提示：
-1. 这个API仅用于岗位与候选人的筛选。如果内容不是这些，你应该返回"内容与招聘无关 无法解答"。
-2. 请根据岗位信息判断是否跟候选人进行下一步沟通。
-3. 只能返回"是"或"否"。
-
-岗位要求：
-${岗位信息}
-
-候选人信息：
-${候选人信息}
-
-请判断是否应该与这位候选人进行下一步沟通，只回答"是"或"否"：</textarea>
-            <div style="font-size: 11px; color: #666; margin-bottom: 10px;">
-                * 使用${候选人信息}和${岗位信息}作为标记符，系统会自动替换为实际内容
-            </div>
-
-            <button class="save-btn" id="ai-config-save">保存配置</button>
         </div>
     </div>
 

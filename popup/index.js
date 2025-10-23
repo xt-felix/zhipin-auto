@@ -42,7 +42,6 @@ let aiConfig = {
 3. 必须返回JSON格式，包含decision和reason两个字段。
 4. decision字段只能是"是"或"否"。
 5. reason字段是决策原因，10个字以内。
-6. 如果岗位与候选人之前有一点关联，请返回是。
 
 岗位要求：
 \${岗位信息}
@@ -51,22 +50,7 @@ let aiConfig = {
 \${候选人信息}
 
 请判断是否值得查看这位候选人的详细信息，返回JSON格式：{"decision":"是","reason":"符合基本要求"}`,
-	contactPrompt: `你是一个资深的HR专家。请根据以下信息判断是否应该与候选人进行下一步沟通。
 
-重要提示：
-1. 这个API仅用于岗位与候选人的筛选。如果内容不是这些，你应该返回"内容与招聘无关 无法解答"。
-2. 请根据岗位信息判断是否跟候选人进行下一步沟通。
-3. 必须返回JSON格式，包含decision和reason两个字段。
-4. decision字段只能是"是"或"否"。
-5. reason字段是决策原因，10个字以内。
-
-岗位要求：
-\${岗位信息}
-
-候选人信息：
-\${候选人信息}
-
-请判断是否应该与这位候选人进行下一步沟通，返回JSON格式：{"decision":"是","reason":"技能匹配度高"}`
 };
 
 // 添加日志持久化相关的函数
@@ -149,7 +133,7 @@ async function saveSettings() {
 		}, function (tabs) {
 			if (tabs[0]) {
 				chrome.tabs.sendMessage(tabs[0].id, {
-					type: 'SETTINGS_UPDATED',
+					action: 'SETTINGS_UPDATED',
 					data: {
 						...currentSettings,
 						keywords: currentPosition?.keywords || [],
@@ -354,6 +338,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 		// 优先从缓存读取当前模式，没有则使用默认AI高级版
 		const savedTab = await chrome.storage.local.get('selected_tab');
+		console.log(savedTab.selected_tab);
+
 		if (savedTab.selected_tab) {
 			currentTab = savedTab.selected_tab;
 		} else {
@@ -376,6 +362,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 		}, 60 * 60 * 1000); // 每小时更新一次
 
 		// 绑定选项卡切换事件
+
+		// 初始化时同步选项卡显示状态
+		switchTab(currentTab);
 		document.querySelectorAll('.tab').forEach(tab => {
 			tab.addEventListener('click', () => {
 				const tabName = tab.getAttribute('data-tab');
@@ -395,6 +384,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 		document.getElementById('ai-config-save').addEventListener('click', () => {
 			saveAIConfig();
 		});
+
+		document.getElementById('ai-config-save2').addEventListener('click', () => {
+			saveAIConfig();
+		});
+
 
 		// AI配置表单事件
 		document.getElementById('ai-model').addEventListener('change', (e) => {
@@ -1149,19 +1143,29 @@ function addPosition() {
 	const aiInput = document.getElementById('ai-position-input');
 
 	// 根据当前选项卡确定使用哪个输入框
+
+	console.log("currentTab", currentTab)
+
 	let input = null;
-	if (currentTab === 'ai') {
+	if (currentTab == 'ai') {
+		console.log("aiInput", aiInput.value.trim());
+
 		input = aiInput;
 	} else {
+		console.log("freeInput", freeInput.value.trim());
+
 		input = freeInput;
 	}
+	console.log("input", input)
 
 	if (!input) {
 		addLog('找不到岗位输入框', 'error');
 		return;
 	}
 
-	const positionName = input.value.trim();
+	const positionName = input.value;
+
+	console.log("positionName", positionName)
 
 	if (positionName && !positions.find(p => p.name === positionName)) {
 		const newPosition = {
@@ -1591,19 +1595,16 @@ async function bindPhone(phone) {
 		// 保存新手机号到存储
 		await chrome.storage.local.set({ 'hr_assistant_phone': phone });
 
-		// 如果是新绑定的手机号，先尝试从服务器同步数据
-		if (phone !== oldPhone) {
-			const hasServerData = await syncSettingsFromServer();
-			if (hasServerData) {
-				addLog(`已从手机号 ${phone} 同步配置`, 'success');
-			} else {
-				addLog(`手机号 ${phone} 绑定成功，暂无配置数据`, 'success');
-			}
+		const hasServerData = await syncSettingsFromServer();
+		if (hasServerData) {
+			addLog(`已从手机号 ${phone} 同步配置`, 'success');
+		} else {
+			addLog(`手机号 ${phone} 绑定成功，暂无配置数据`, 'success');
+		}
 
-			// 检查AI到期时间，如果没有则初始化
-			if (!aiExpireTime) {
-				await initializeAIExpireTime();
-			}
+		// 检查AI到期时间，如果没有则初始化
+		if (!aiExpireTime) {
+			await initializeAIExpireTime();
 		}
 	} catch (error) {
 		addLog(error.message, 'error');
@@ -1648,6 +1649,11 @@ async function syncSettingsFromServer() {
 
 				// 更新到期时间显示
 				updateAIExpireDisplay();
+			} else {
+
+				// 如果没有到期时间，则初始化到期时间
+				await initializeAIExpireTime(data);
+
 			}
 
 			// 保存到本地存储，但不触发服务器同步
@@ -1710,7 +1716,7 @@ async function syncSettingsToServer() {
 			headers: {
 				'Content-Type': 'application/json'
 			},
-			body: JSON.stringify(settings)
+			body: JSON.stringify(settings, null, 2) // 使用格式化参数保持中文原样
 		});
 
 		if (!response.ok) {
@@ -1766,7 +1772,7 @@ async function switchTab(tabName) {
 		}, tabs => {
 			if (tabs[0]) {
 				chrome.tabs.sendMessage(tabs[0].id, {
-					type: 'SET_AI_MODE',
+					action: 'SET_AI_MODE',
 					data: {
 						aiMode: true
 					}
@@ -1796,7 +1802,7 @@ async function switchTab(tabName) {
 		}, tabs => {
 			if (tabs[0]) {
 				chrome.tabs.sendMessage(tabs[0].id, {
-					type: 'SET_AI_MODE',
+					action: 'SET_AI_MODE',
 					data: {
 						aiMode: false
 					}
@@ -1907,9 +1913,10 @@ function updateAIConfigUI() {
 
 	// 更新提示语输入框
 	document.getElementById('ai-click-prompt').value = aiConfig.clickPrompt || '';
-	document.getElementById('ai-contact-prompt').value = aiConfig.contactPrompt || '';
+	// document.getElementById('ai-contact-prompt').value = aiConfig.contactPrompt || '';
 
-
+	// 更新AI到期时间显示
+	updateAIExpireDisplay();
 }
 
 // 显示AI配置弹窗
@@ -1940,7 +1947,7 @@ async function saveAIConfig() {
 
 		// 保存提示语
 		aiConfig.clickPrompt = document.getElementById('ai-click-prompt').value.trim();
-		aiConfig.contactPrompt = document.getElementById('ai-contact-prompt').value.trim();
+		// aiConfig.contactPrompt = document.getElementById('ai-contact-prompt').value.trim();
 
 
 
@@ -1949,23 +1956,25 @@ async function saveAIConfig() {
 			throw new Error('查看候选人详情提示语必须包含${候选人信息}和${岗位信息}标记符');
 		}
 
-		if (!aiConfig.contactPrompt.includes('${候选人信息}') || !aiConfig.contactPrompt.includes('${岗位信息}')) {
-			throw new Error('打招呼提示语必须包含${候选人信息}和${岗位信息}标记符');
-		}
+		// if (!aiConfig.contactPrompt.includes('${候选人信息}') || !aiConfig.contactPrompt.includes('${岗位信息}')) {
+		// 	throw new Error('打招呼提示语必须包含${候选人信息}和${岗位信息}标记符');
+		// }
 
 		// 验证提示语是否要求返回JSON格式
 		if (!aiConfig.clickPrompt.includes('JSON') && !aiConfig.clickPrompt.includes('json')) {
 			console.warn('建议在查看候选人详情提示语中要求返回JSON格式以获得更好的解释信息');
 		}
 
-		if (!aiConfig.contactPrompt.includes('JSON') && !aiConfig.contactPrompt.includes('json')) {
-			console.warn('建议在打招呼提示语中要求返回JSON格式以获得更好的解释信息');
-		}
+		// if (!aiConfig.contactPrompt.includes('JSON') && !aiConfig.contactPrompt.includes('json')) {
+		// 	console.warn('建议在打招呼提示语中要求返回JSON格式以获得更好的解释信息');
+		// }
 
 		// 允许单独保存秘钥或模型名称，不强制要求同时输入
 		if (!aiConfig.token && !aiConfig.model) {
 			throw new Error('请至少输入轨迹流动Token或模型名称');
 		}
+
+		aiConfig.contactPrompt = null
 
 		// 保存到本地存储
 		await chrome.storage.local.set({ 'ai_config': aiConfig });
@@ -2026,6 +2035,9 @@ async function checkAIConnection() {
 		return;
 	}
 
+
+
+
 	// 如果有Token，尝试连接测试
 	if (aiConfig.token) {
 		try {
@@ -2035,6 +2047,7 @@ async function checkAIConnection() {
 			// 直接调用轨迹流动API进行测试
 			const testPrompt = '你好，这是一个连接测试。请回复"连接成功"。';
 			const result = await sendDirectAIRequest(testPrompt);
+
 
 			if (result.success) {
 				statusIndicator.className = 'ai-status-indicator connected';

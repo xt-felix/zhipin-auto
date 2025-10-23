@@ -56,7 +56,6 @@ class BossParser extends BaseParser {
 
     // 初始化数据拦截监听
     initDataInterceptor() {
-        console.log('初始化Boss直聘数据拦截监听器...');
 
         // 监听来自boss_interceptor.js的拦截数据
         window.addEventListener('message', (event) => {
@@ -173,8 +172,9 @@ class BossParser extends BaseParser {
         );
     }
 
+    //第二次组装。无需
     extractCandidates2(data) {
-        return data
+        return null
     }
 
     //提取信息

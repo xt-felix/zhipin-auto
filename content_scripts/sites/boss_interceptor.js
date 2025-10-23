@@ -9,7 +9,6 @@
         '/wapi/zpitem/web/boss/search'
     ];
 
-    console.log('🚀 Boss直聘API拦截器已加载，目标模式:', TARGET_PATTERNS);
 
     // Hook fetch API
     const originalFetch = window.fetch;
@@ -34,7 +33,6 @@
                 const cloned = res.clone();
                 const contentType = cloned.headers.get('content-type') || '';
 
-                console.log('📋 响应Content-Type:', contentType);
 
                 if (contentType.includes('application/json')) {
                     const data = await cloned.json();
@@ -49,11 +47,8 @@
                         status: cloned.status,
                         data
                     }, '*');
-                    console.log('📤 已发送拦截数据');
                 } else {
                     const text = await cloned.text();
-                    console.log('📄 拦截到文本数据，长度:', text.length);
-                    console.log('📄 文本内容预览:', text.substring(0, 200));
                 }
             }
         } catch (e) {
@@ -120,5 +115,4 @@
     }
     window.XMLHttpRequest = WrappedXHR;
 
-    console.log('✅ Boss直聘API拦截器初始化完成');
 })();

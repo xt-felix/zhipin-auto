@@ -278,6 +278,8 @@ async function executeScroll() {
     }
 
     try {
+
+
         await currentParser.loadSettings();
         const documents = getAllDocuments();
 
@@ -444,10 +446,8 @@ function addHighlightReason(element, reason, color) {
 // 处理单个元素的函数
 async function processElement(element, doc) {
 
-    console.log();
 
     try {
-        enableSound = currentParser.aiSettings.enableSound
         // 发送计数请求到服务器（不等待响应）
         const apiBase = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'https://goodhr.58it.cn';
         fetch(`${apiBase}/counter.php`, {
@@ -522,6 +522,8 @@ async function processElement(element, doc) {
                 let clickCandidate = false;
                 simpleCandidateInfo = await currentParser.getSimpleCandidateInfo(candidate);
 
+                console.log("第一次数据组装的结果");
+                console.log(simpleCandidateInfo);
                 if (currentParser.aiMode) {
                     // AI模式：基于简单信息决定是否查看详细信息
 
@@ -556,6 +558,8 @@ async function processElement(element, doc) {
                             colleagueContactedInfo = await currentParser.queryColleagueContactedInfo(candidate);
                             simpleCandidateInfo += colleagueContactedInfo;
 
+                            console.log("查询同事沟通过候选人的信息");
+                            console.log(simpleCandidateInfo);
                         } catch (error) {
                             console.error('查询同事沟通过候选人的信息失败:', error);
                         }
@@ -564,10 +568,9 @@ async function processElement(element, doc) {
                         try {
                             //第二次组装信息
                             let data2 = currentParser.extractCandidates2(candidate);
-                            if (data2) {
+                            if (data2 != null) {
                                 simpleCandidateInfo = data2
                             }
-                            console.log(simpleCandidateInfo);
                         } catch (error) {
                             console.error('第二次组装信息失败:', error);
                         }
@@ -589,8 +592,7 @@ async function processElement(element, doc) {
 
                             } else {
 
-                                // const candidateInfo = await getCandidateInfo(candidate);
-                                let { isok, msg } = {} = await performAIFilter(simpleCandidateInfo);
+                                let { isok, msg } = {} = await performAIClickDecision(simpleCandidateInfo);
                                 shouldContact = isok;
                                 AiMsg = msg
                             }
@@ -615,7 +617,7 @@ async function processElement(element, doc) {
                     // 如果不查看详情，直接使用关键词筛选
                     if (!currentParser.aiMode) {
                         // console.log('使用关键词筛选候选人:', candidate.name);
-                        shouldContact = currentParser.filterCandidate(candidate);
+                        shouldContact = currentParser.filterCandidate(simpleCandidateInfo);
                     }
                 }
 
@@ -726,9 +728,9 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                 await startAutoScroll();
                 sendResponse({ status: 'success' });
                 break;
+            case 'SET_AI_MODE':
+                break;
             case 'START_AI_SCROLL':
-                // console.log('收到开始AI滚动消息:', message);
-                // console.log('AI消息数据:', message.data);
 
                 // 检查解析器是否已初始化
                 if (!currentParser) {
@@ -754,6 +756,9 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                     scrollDelayMax: message.data.scrollDelayMax,
                     enableSound: message.data.enableSound
                 };
+
+                enableSound = currentParser.aiSettings.enableSound
+
 
                 // console.log('设置AI模式:', {
                 //     aiMode: currentParser.aiMode,
@@ -784,7 +789,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                         scrollDelayMin: message.data.scrollDelayMin || 3,
                         scrollDelayMax: message.data.scrollDelayMax || 5
                     });
-                    console.log('已更新设置:', message.data);
                     sendResponse({ status: 'ok' });
                 } else {
                     console.error('解析器未初始化');
@@ -869,42 +873,7 @@ async function getCandidateInfo(candidate) {
     }
 }
 
-// 执行AI筛选
-async function performAIFilter(candidateInfo) {
-    try {
-        // 检查AI是否过期
-        const isExpired = await checkAIExpiration();
-        if (isExpired) {
-            alert('AI版本试用期已到期，请前往官网联系作者续费。\n\n官网地址：http://goodhr.58it.cn');
-            return false;
-        }
 
-        // 显示AI决策动画
-        showAIDecisionModal();
-
-        // 构建AI提示词
-        const prompt = buildAIPrompt(currentParser.aiSettings.jobDescription, candidateInfo);
-
-        // 直接调用轨迹流动API
-        const result = await sendDirectAIRequest(prompt, currentParser.aiSettings.aiConfig);
-
-        // 隐藏AI决策动画
-        hideAIDecisionModal();
-
-        if (result.success) {
-            const shouldContact = parseAIResponse(result.response);
-            return shouldContact;
-        } else {
-            console.error('AI筛选失败:', result.error);
-            return false;
-        }
-    } catch (error) {
-        // 确保动画被隐藏
-        hideAIDecisionModal();
-        console.error('AI筛选请求失败:', error);
-        return false;
-    }
-}
 
 // 轨迹流动API配置
 const GUJJI_API_CONFIG = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.GUJJI_API : {
@@ -1041,33 +1010,6 @@ ${simpleCandidateInfo}
 返回JSON格式：{"decision":"是","reason":"符合基本要求"}`;
 }
 
-// 构建AI提示词（用于第二个决策点）
-function buildAIPrompt(jobDescription, candidateInfo) {
-    const customPrompt = currentParser.aiSettings?.aiConfig?.contactPrompt;
-    if (customPrompt) {
-        return customPrompt
-            .replace('${候选人信息}', candidateInfo)
-            .replace('${岗位信息}', jobDescription);
-    }
-
-    // 默认提示语
-    return `你是一个资深的HR专家。请根据以下信息判断是否应该与候选人进行下一步沟通。
-
-重要提示：
-1. 这个API仅用于岗位与候选人的筛选。如果内容不是这些，你应该返回"内容与招聘无关 无法解答"。
-2. 请根据岗位信息判断是否跟候选人进行下一步沟通。
-3. 必须返回JSON格式，包含decision和reason两个字段。
-4. decision字段只能是"是"或"否"。
-5. reason字段是决策原因，10个字以内。
-
-岗位要求：
-${jobDescription}
-
-候选人信息：
-${candidateInfo}
-
-请判断是否应该与这位候选人进行下一步沟通，返回JSON格式：{"decision":"是","reason":"技能匹配度高"}`;
-}
 
 // 解析AI响应
 function parseAIResponse(response) {
@@ -1294,11 +1236,11 @@ function isExtensionValid() {
 function initializeConnection() {
     try {
         port = chrome.runtime.connect({ name: 'content-script-connection' });
-        port.onDisconnect.addListener(() => {
-            console.log('连接断开，尝试重新连接');
-            port = null;
-            setTimeout(initializeConnection, 1000);
-        });
+        // port.onDisconnect.addListener(() => {
+        //     console.log('连接断开，尝试重新连接');
+        //     port = null;
+        //     setTimeout(initializeConnection, 1000);
+        // });
         return true;
     } catch (error) {
         console.error('建立连接失败:', error);

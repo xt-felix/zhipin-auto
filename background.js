@@ -39,9 +39,7 @@ function startKeepAlive() {
     if (keepAliveInterval) {
         clearInterval(keepAliveInterval);
     }
-    keepAliveInterval = setInterval(() => {
-        console.log('Service Worker 保活 ping:', new Date().toISOString());
-    }, 20000);
+
 }
 
 // 获取打赏排行榜数据
