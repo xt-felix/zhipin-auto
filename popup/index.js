@@ -96,6 +96,33 @@ async function saveSettings() {
 		serverData.scrollDelayMax = parseInt(document.getElementById('delay-max')?.value) || 5;
 		serverData.clickFrequency = parseInt(document.getElementById('click-frequency')?.value) || 7;
 
+		// 保存公司信息
+		if (!serverData.companyInfo) {
+			serverData.companyInfo = {};
+		}
+		serverData.companyInfo.content = document.getElementById('company-info')?.value || '';
+
+		// 保存岗位信息
+		if (!serverData.jobInfo) {
+			serverData.jobInfo = {};
+		}
+		serverData.jobInfo.extraInfo = document.getElementById('job-extra-info')?.value || '';
+
+		// 保存沟通处理配置
+		if (!serverData.communicationConfig) {
+			serverData.communicationConfig = {};
+		}
+		serverData.communicationConfig.collectPhone = document.getElementById('collect-phone')?.checked || true;
+		serverData.communicationConfig.collectWechat = document.getElementById('collect-wechat')?.checked || true;
+		serverData.communicationConfig.collectResume = document.getElementById('collect-resume')?.checked || true;
+
+		// 保存运行模式配置
+		if (!serverData.runModeConfig) {
+			serverData.runModeConfig = {};
+		}
+		serverData.runModeConfig.greetingEnabled = document.getElementById('greeting-checkbox')?.checked !== false; // 默认为true
+		serverData.runModeConfig.communicationEnabled = document.getElementById('communication-checkbox')?.checked !== false; // 默认为true
+
 		// 保存到本地存储
 		await chrome.storage.local.set({
 			'hr_assistant_settings': {
@@ -106,7 +133,11 @@ async function saveSettings() {
 				enableSound: serverData.enableSound,
 				scrollDelayMin: serverData.scrollDelayMin,
 				scrollDelayMax: serverData.scrollDelayMax,
-				clickFrequency: serverData.clickFrequency
+				clickFrequency: serverData.clickFrequency,
+				companyInfo: serverData.companyInfo,
+				jobInfo: serverData.jobInfo,
+				communicationConfig: serverData.communicationConfig,
+				runModeConfig: serverData.runModeConfig
 			},
 			'ai_config': serverData.ai_config,
 			'ai_expire_time': serverData.ai_expire_time
@@ -143,7 +174,11 @@ async function saveSettings() {
 						scrollDelayMax: serverData.scrollDelayMax,
 						clickFrequency: serverData.clickFrequency,
 						keywords: serverData.currentPosition?.keywords || [],
-						excludeKeywords: serverData.currentPosition?.excludeKeywords || []
+						excludeKeywords: serverData.currentPosition?.excludeKeywords || [],
+						companyInfo: serverData.companyInfo,
+						jobInfo: serverData.jobInfo,
+						communicationConfig: serverData.communicationConfig,
+						runModeConfig: serverData.runModeConfig
 					}
 				}, response => {
 					if (chrome.runtime.lastError) {
@@ -219,7 +254,7 @@ function addKeyword() {
 
 // 添加排除关键词的函数
 function addExcludeKeyword() {
-	if (!currentPosition) {
+	if (!serverData.currentPosition) {
 		addLog('⚠️ 请先选择岗位', 'error');
 		return;
 	}
@@ -366,6 +401,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 		// 初始化时同步选项卡显示状态
 		switchTab(currentTab);
+		
+		// 确保在初始化完成后更新关键词和岗位说明显示
+		if (serverData.currentPosition) {
+			renderKeywords();
+			renderExcludeKeywords();
+			updateJobDescription();
+		}
 		document.querySelectorAll('.tab').forEach(tab => {
 			tab.addEventListener('click', () => {
 				const tabName = tab.getAttribute('data-tab');
@@ -1091,7 +1133,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 		addLog(logText, 'success');
 
 		// 播放提示音
-		if (enableSound) {
+		if (serverData.enableSound) {
 			const audio = new Audio(chrome.runtime.getURL('sounds/notification2.mp3'));
 			audio.volume = 0.5; // 设置音量
 			audio.play().catch(error => console.error('播放提示音失败:', error));
@@ -1102,7 +1144,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 			stopAutoScroll();
 			addLog(`已达到设定的打招呼数量 ${matchLimit}，自动停止`, 'warning');
 			// 播放特殊的完成提示音
-			if (enableSound) {
+			if (serverData.enableSound) {
 				const audio = new Audio(chrome.runtime.getURL('sounds/error.mp3'));
 				audio.volume = 0.5; // 设置音量
 				audio.play().catch(error => console.error('播放提示音失败:', error));				// 连续播放两次以示区分
@@ -1255,6 +1297,9 @@ function selectPosition(positionName) {
 
 	// 更新岗位说明
 	updateJobDescription();
+	
+	// 保存选择的岗位到本地存储
+	saveSettings();
 }
 
 // 更新岗位说明显示
@@ -2364,6 +2409,18 @@ async function loadSettingsFromLocal() {
 			if (localSettings.enableSound !== undefined) serverData.enableSound = localSettings.enableSound;
 			if (localSettings.scrollDelayMin) serverData.scrollDelayMin = localSettings.scrollDelayMin;
 			if (localSettings.scrollDelayMax) serverData.scrollDelayMax = localSettings.scrollDelayMax;
+			
+			// 加载公司信息
+			if (localSettings.companyInfo) serverData.companyInfo = localSettings.companyInfo;
+			
+			// 加载岗位信息
+			if (localSettings.jobInfo) serverData.jobInfo = localSettings.jobInfo;
+			
+			// 加载沟通处理配置
+			if (localSettings.communicationConfig) serverData.communicationConfig = localSettings.communicationConfig;
+			
+			// 加载运行模式配置
+			if (localSettings.runModeConfig) serverData.runModeConfig = localSettings.runModeConfig;
 		}
 
 		if (result.ai_expire_time) {
@@ -2461,6 +2518,13 @@ function updateAllUI() {
 function updatePositionsUI() {
 	// 调用renderPositions来更新岗位数据UI
 	renderPositions();
+	
+	// 如果有选中的岗位，更新关键词和岗位说明显示
+	if (serverData.currentPosition) {
+		renderKeywords();
+		renderExcludeKeywords();
+		updateJobDescription();
+	}
 }
 
 /**
@@ -2489,6 +2553,45 @@ function updateOtherSettingsUI() {
 	if (delayMaxInput && serverData.scrollDelayMax !== undefined) {
 		delayMaxInput.value = serverData.scrollDelayMax;
 	}
+	
+	// 更新公司信息设置
+	const companyInfoElement = document.getElementById('company-info');
+	if (companyInfoElement && serverData.companyInfo && serverData.companyInfo.content !== undefined) {
+		companyInfoElement.value = serverData.companyInfo.content;
+	}
+	
+	// 更新岗位信息设置
+	const jobExtraInfoElement = document.getElementById('job-extra-info');
+	if (jobExtraInfoElement && serverData.jobInfo && serverData.jobInfo.extraInfo !== undefined) {
+		jobExtraInfoElement.value = serverData.jobInfo.extraInfo;
+	}
+	
+	// 更新沟通处理配置
+	const communicationFields = [
+		'collect-contact-methods', 
+		'auto-send-greeting', 'auto-process-resume'
+	];
+	
+	communicationFields.forEach(field => {
+		const element = document.getElementById(field);
+		if (element && serverData.communicationConfig && serverData.communicationConfig[field.replace(/-/g, '')] !== undefined) {
+			if (element.type === 'checkbox') {
+				element.checked = serverData.communicationConfig[field.replace(/-/g, '')];
+			} else {
+				element.value = serverData.communicationConfig[field.replace(/-/g, '')];
+			}
+		}
+	});
+	
+	// 更新运行模式配置
+	const runModeFields = ['greeting-checkbox', 'communication-checkbox'];
+	
+	runModeFields.forEach(field => {
+		const element = document.getElementById(field);
+		if (element && serverData.runModeConfig && serverData.runModeConfig[field.replace('-checkbox', '')] !== undefined) {
+			element.checked = serverData.runModeConfig[field.replace('-checkbox', '')];
+		}
+	});
 }
 
 // AI优化岗位描述函数

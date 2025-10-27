@@ -461,6 +461,85 @@ class LiepinParser extends BaseParser {
             return false;
         }
     }
+
+
+
+      // 处理沟通功能
+    async processCommunication(candidate) {
+        try {
+            // 检查是否启用了沟通处理功能
+            if (!this.communicationConfig || !this.communicationConfig.communicationEnabled) {
+                console.log('沟通处理功能未启用');
+                return false;
+            }
+
+            // 获取候选人详情
+            const candidateInfo = this.getSimpleCandidateInfo(candidate);
+            
+            // 构建沟通内容
+            let communicationContent = "";
+            
+            // 添加公司信息
+            if (this.companyInfo) {
+                communicationContent += `公司名称：${this.companyInfo.name || ''}\n`;
+                communicationContent += `公司地址：${this.companyInfo.address || ''}\n`;
+                communicationContent += `公司规模：${this.companyInfo.size || ''}\n`;
+                communicationContent += `公司类型：${this.companyInfo.type || ''}\n`;
+                communicationContent += `所属行业：${this.companyInfo.industry || ''}\n`;
+                communicationContent += `公司介绍：${this.companyInfo.description || ''}\n`;
+                communicationContent += `公司官网：${this.companyInfo.website || ''}\n`;
+                communicationContent += `联系电话：${this.companyInfo.phone || ''}\n`;
+                communicationContent += `联系邮箱：${this.companyInfo.email || ''}\n\n`;
+            }
+            
+            // 添加岗位信息
+            if (this.jobInfo) {
+                communicationContent += `岗位名称：${this.jobInfo.title || ''}\n`;
+                communicationContent += `岗位职责：${this.jobInfo.duty || ''}\n`;
+                communicationContent += `岗位要求：${this.jobInfo.requirement || ''}\n`;
+                communicationContent += `经验要求：${this.jobInfo.experience || ''}\n`;
+                communicationContent += `学历要求：${this.jobInfo.education || ''}\n`;
+                communicationContent += `薪资范围：${this.jobInfo.salary || ''}\n`;
+                communicationContent += `工作地点：${this.jobInfo.location || ''}\n`;
+                communicationContent += `工作性质：${this.jobInfo.type || ''}\n`;
+                communicationContent += `岗位类别：${this.jobInfo.category || ''}\n`;
+                communicationContent += `岗位描述：${this.jobInfo.description || ''}\n\n`;
+            }
+            
+            // 添加候选人信息
+            communicationContent += `候选人信息：\n${candidateInfo}\n\n`;
+            
+            // 根据配置决定是否自动发送招呼
+            if (this.communicationConfig.autoSendGreeting) {
+                // 这里应该实现自动发送招呼的逻辑
+                console.log('自动发送招呼功能已启用');
+                // TODO: 实现自动发送招呼的具体逻辑
+            }
+            
+            // 根据配置决定是否自动处理简历
+            if (this.communicationConfig.autoProcessResume) {
+                // 这里应该实现自动处理简历的逻辑
+                console.log('自动处理简历功能已启用');
+                // TODO: 实现自动处理简历的具体逻辑
+            }
+            
+            // 收集联系方式（如果启用）
+            if (this.communicationConfig.collectContactMethods) {
+                // 这里应该实现收集联系方式的逻辑
+                console.log('收集联系方式功能已启用');
+                // TODO: 实现收集联系方式的具体逻辑
+            }
+            
+            console.log('沟通处理完成:', communicationContent);
+            return true;
+        } catch (error) {
+            console.error('处理沟通功能时出错:', error);
+            return false;
+        }
+    }
 }
+
+  
+
 
 export { LiepinParser };

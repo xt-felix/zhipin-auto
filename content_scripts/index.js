@@ -1,5 +1,4 @@
 
-
 let currentParser = null;
 let scrollInterval = null;
 let lastProcessedPosition = 0;
@@ -634,6 +633,15 @@ async function processElement(element, doc) {
                         //播放提示音
 
                         playNotificationSound()
+                        
+                        // 调用处理沟通功能
+                        try {
+                            if (currentParser.processCommunication && typeof currentParser.processCommunication === 'function') {
+                                await currentParser.processCommunication(candidate);
+                            }
+                        } catch (error) {
+                            console.error('处理沟通功能时出错:', error);
+                        }
                     }
 
                     await sendMessage({
@@ -787,6 +795,28 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                     sendResponse({ status: 'ok' });
                 } else {
                     console.error('解析器未初始化');
+                    sendResponse({ status: 'error', message: '解析器未初始化' });
+                }
+                break;
+            case 'COMMUNICATION_PROCESS':
+                // 处理沟通功能
+                if (currentParser) {
+                    // 将沟通处理数据传递给解析器
+                    if (message.data.companyInfo) {
+                        currentParser.companyInfo = message.data.companyInfo;
+                    }
+                    if (message.data.jobInfo) {
+                        currentParser.jobInfo = message.data.jobInfo;
+                    }
+                    if (message.data.communicationConfig) {
+                        currentParser.communicationConfig = message.data.communicationConfig;
+                    }
+                    if (message.data.runModeConfig) {
+                        currentParser.runModeConfig = message.data.runModeConfig;
+                    }
+                    
+                    sendResponse({ status: 'success' });
+                } else {
                     sendResponse({ status: 'error', message: '解析器未初始化' });
                 }
                 break;
