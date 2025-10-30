@@ -48,6 +48,17 @@
 			"all_frames": true,
 			"match_about_blank": true
 		},
+			{
+			"matches": [
+				"*://h.liepin.com/*"
+			],
+			"js": [
+				"content_scripts/sites/hliepin_injector.js"
+			],
+			"run_at": "document_start",
+			"all_frames": true,
+			"match_about_blank": true
+		},
 		{
 			"matches": [
 				"*://*.zhipin.com/*"

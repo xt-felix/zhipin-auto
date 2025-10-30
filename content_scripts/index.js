@@ -90,13 +90,19 @@ async function initializeParser() {
             currentParser = new LagouParser();
             // showNotification('拉勾网初始化完成-GoodHR', 'status');
             createDraggablePrompt();
-        } else if (url.includes('liepin.com')) {
+        } else if (url.includes('lpt.liepin.com')) {
             ParserName = 'liepin'
             const { LiepinParser } = await import(extensionUrl + 'content_scripts/sites/liepin.js');
             currentParser = new LiepinParser();
             // showNotification('猎聘网初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
             createDraggablePrompt();
-        } else if (url.includes('zhaopin.com')) {
+        } else if (url.includes('h.liepin.com')) {
+            ParserName = 'hliepin'
+            const { HLiepinParser } = await import(extensionUrl + 'content_scripts/sites/hliepin.js');
+            currentParser = new HLiepinParser();
+            // showNotification('猎聘网初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
+            createDraggablePrompt();
+        }  else if (url.includes('zhaopin.com')) {
 
             ParserName = 'zhilian'
             const { ZhilianParser } = await import(extensionUrl + 'content_scripts/sites/zhilian.js');
