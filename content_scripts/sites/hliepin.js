@@ -5,18 +5,15 @@ class HLiepinParser extends BaseParser {
         super();
         this.selectors = {
             container: 'recommandResumes--',
-            items: 'newResumeItemWrap--',
-            name: 'nest-resume-personal-name',
+            items: 'no-hover-tr',
+            name: 'new-resume-personal-name',
             age: 'personal-detail-age',
-            education: 'personal-detail-edulevel',
-            university: 'resume-university',
-            description: 'resume-description',
-            clickTarget: 'ant-lpt-btn ant-lpt-btn-primary ant-lpt-teno-btn ant-lpt-teno-btn-secondary',
-            extraSelectors: [
-                { prefix: 'nest-resume-personal-skills', type: '技能' },
-                { prefix: 'personal-expect-content', type: '薪资' },
-                { prefix: 'personal-detail-location', type: 'location' },
-            ]
+            education: 'J1lRR',
+            university: 'J1lRR',
+            description: 'new-resume-personal-expect',
+            clickTarget: 'ant-btn ant-btn-default ant-btn-lg lp-ant-btn-light',
+            extraSelectors: 'J1lRR',
+            onlineStatus: 'new-resume-offline'
         };
 
         this.urlInfo = {
@@ -26,7 +23,7 @@ class HLiepinParser extends BaseParser {
 
         // 添加猎聘特定的详情页选择器
         this.detailSelectors = {
-            detailLink: 'newResumeItem', // 点击姓名打开详情
+            detailLink: 'tlog-common-resume-card qkdlK', // 点击姓名打开详情
             closeButton: 'closeBtn--', // 关闭按钮
             viewButton: '.ant-lpt-btn.ant-lpt-btn-primary' // 查看按钮
         };
@@ -57,6 +54,10 @@ class HLiepinParser extends BaseParser {
      * @returns
      */
     getSimpleCandidateInfo(data) {
+
+        //等待1秒，确保元素加载完成
+        // 等待1秒，确保元素加载完成
+        new Promise(resolve => setTimeout(resolve, 1000));
       
         
         let data2 = ""
@@ -75,22 +76,141 @@ class HLiepinParser extends BaseParser {
 
         return data2;
     }
-    extractCandidates2(data) {
-          // 使用通用查找函数查找元素，尝试多种方法（同步模式）
-        const result = this.findElementsByMultipleMethods(".content--dw5Ml", {
-            includeHidden: false,  // 不包含隐藏元素
-            methods: ['all']  // 尝试所有方法
-        });        
-        // 直接同步处理结果
-        // console.log("元素查找结果:", result);
+    async extractCandidates2(data) {
+
+        //等待1秒，确保元素加载完成
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      
+        return new Promise((resolve, reject) => {
+            // 存储所有响应
+            const responses = [];
+            
+            // 设置超时时间 - 增加到5秒，确保有足够时间等待响应
+            const timeout = setTimeout(() => {
+                // 清理所有监听器
+                window.removeEventListener('message', messageHandler);
+                window.removeEventListener('storage', storageHandler);
+                if (channel) {
+                    channel.close();
+                }
+                
+                // 超时后处理收集到的响应
+                if (responses.length === 0) {
+                    reject(new Error('获取候选人详细信息超时，未收到任何响应'));
+                } else {
+                    // 尝试通过名字匹配找到正确的响应
+                    const matchedResponse = this.findMatchingResponse(responses, data);
+
+                    // console.log("匹配到的响应:", matchedResponse);
+                    // return matchedResponse;
+                    resolve(matchedResponse);
+
+                }
+            }, 5000); // 5秒超时，等待所有响应
+            
+            // 定义消息处理函数
+            const messageHandler = (event) => {
+                // 检查消息来源和类型
+                if (event.data && 
+                    event.data.source === 'goodhr-plugin' && 
+                    event.data.type === 'candidate-detail-response') {
+                    
+                    // 接收所有响应
+                    // 添加到响应列表
+                    responses.push(event.data);
+
+                    console.log(`通过postMessage收到第${responses.length}个响应:`, event.data.data);
+                }
+            };
+            
+            // 定义storage事件处理函数
+            const storageHandler = (event) => {
+                if (event.key === 'goodhr-candidate-detail' && event.newValue) {
+                    try {
+                        const data = JSON.parse(event.newValue);
+                        if (data.source === 'goodhr-plugin' && data.type === 'candidate-detail-response') {
+                            responses.push(data);
+                            console.log(`通过localStorage收到第${responses.length}个响应:`, data.data);
+                        }
+                    } catch (e) {
+                        console.error('解析localStorage数据失败:', e);
+                    }
+                }
+            };
+            
+            // 尝试创建BroadcastChannel
+            let channel = null;
+            try {
+                channel = new BroadcastChannel('goodhr-plugin');
+                channel.onmessage = (event) => {
+                    if (event.data && 
+                        event.data.source === 'goodhr-plugin' && 
+                        event.data.type === 'candidate-detail-response') {
+                        
+                        responses.push(event.data);
+                        // console.log(`通过BroadcastChannel收到第${responses.length}个响应:`, event.data.data);
+                    }
+                };
+            } catch (e) {
+                console.log('BroadcastChannel不可用:', e);
+            }
+            
+            // 添加事件监听器
+            window.addEventListener('message', messageHandler);
+            window.addEventListener('storage', storageHandler);
+            
+            // 检查localStorage中是否已有数据
+            try {
+                const storedData = localStorage.getItem('goodhr-candidate-detail');
+                if (storedData) {
+                    const data = JSON.parse(storedData);
+                    // 检查数据是否是最近的（5秒内）
+                    if (data.timestamp && (Date.now() - data.timestamp < 5000)) {
+                        if (data.source === 'goodhr-plugin' && data.type === 'candidate-detail-response') {
+                            responses.push(data);
+                            console.log(`从localStorage获取到最近的候选人信息:`, data.data);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('从localStorage获取数据失败:', e);
+            }
+            
+            // 生成一个唯一的请求ID
+            const requestId = 'req-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            
+            // 发送请求给injector，让它发送候选人信息
+            try {
+                // 尝试使用BroadcastChannel API
+                const reqChannel = new BroadcastChannel('goodhr-plugin');
+                reqChannel.postMessage({
+                    source: 'goodhr-plugin',
+                    type: 'get-candidate-detail',
+                    requestId: requestId
+                });
+                console.log('通过BroadcastChannel发送获取候选人信息请求');
+            } catch (e) {
+                console.log('BroadcastChannel不可用，使用postMessage发送请求');
+                // 备选方案：使用postMessage
+                window.postMessage({
+                    source: 'goodhr-plugin',
+                    type: 'get-candidate-detail',
+                    requestId: requestId
+                }, '*');
+            }
+            
+            console.log('等待接收候选人详细信息...');
+        });
+
+
+
+    }
+    
+    // 通过名字匹配找到正确的响应
+    findMatchingResponse(responses, originalData) {
+        // console.log('候选人信息:', responses[0].data.textContent);
         
-        if (result.elements && result.elements.length > 0) {
-            // console.log("成功找到元素，使用方法:", result.method);
-           return result.elements[0].textContent;
-        } else {
-            // console.log("未能找到目标元素:", result.message);
-            return null;
-        }
+        return responses[0].data.textContent;
     }
 
 
@@ -354,21 +474,26 @@ class HLiepinParser extends BaseParser {
                 // this.highlightElement(item, 'processing');
 
                 try {
-                    const nameElement = this.getElementByClassPrefix(item, this.selectors.name);
+
+                    const nameElement = this.getElementByClassPrefix(item, this.selectors.name);                    
                     const ageElement = this.getElementByClassPrefix(item, this.selectors.age);
                     const educationElement = this.getElementByClassPrefix(item, this.selectors.education);
                     const universityElement = this.getElementByClassPrefix(item, this.selectors.university);
                     const descriptionElement = this.getElementByClassPrefix(item, this.selectors.description);
-
-                    const extraInfo = this.extractExtraInfo(item, this.selectors.extraSelectors);
+                    const extraInfo = this.getElementByClassPrefix(item, this.selectors.extraSelectors);
+                    //在线状态
+                    const onlineStatusElement = this.getElementByClassPrefix(item, this.selectors.onlineStatus);
 
                     const candidate = {
-                        name: nameElement?.textContent?.trim() || '',
+                        name: nameElement?.textContent?.trim() + '年龄:' + ageElement?.textContent,
                         age: parseInt(ageElement?.textContent) || 0,
                         education: educationElement?.textContent?.trim() || '',
                         university: universityElement?.textContent?.trim() || '',
                         description: descriptionElement?.textContent?.trim() || item.textContent?.trim() || '',
-                        extraInfo: extraInfo
+                        extraInfo: [
+                            {type: '在线状态', value: onlineStatusElement?.textContent?.trim() || ''},
+                            {type: '求职期望', value: descriptionElement?.textContent?.trim() || ''},
+                        ] || [],
                     };
 
 
@@ -376,7 +501,6 @@ class HLiepinParser extends BaseParser {
                         candidates.push(candidate);
                         // this.highlightElement(item, 'matched');
                     } else {
-                        this.clearHighlight(item);
                         console.log('未能提取到有效的候选人信息');
                     }
                 } catch (error) {
@@ -389,6 +513,9 @@ class HLiepinParser extends BaseParser {
             console.error('提取候选人信息失败:', error);
             throw error;
         }
+
+        console.log('提取到的候选人信息:', candidates);
+        
 
         return candidates;
     }
@@ -418,14 +545,6 @@ class HLiepinParser extends BaseParser {
 
             if (detailLink) {
                 detailLink.click();
-
-                // 等待查看按钮出现并点击（某些情况下需要）
-                // await new Promise(resolve => setTimeout(resolve, 500));
-                // const viewButton = document.querySelector(this.detailSelectors.viewButton);
-                // if (viewButton) {
-                //     console.log('找到查看按钮，点击');
-                //     viewButton.click();
-                // }
 
                 return true;
             }

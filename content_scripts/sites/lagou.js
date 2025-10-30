@@ -65,7 +65,7 @@ class LagouParser extends BaseParser {
         return data2;
     }
 
-    extractCandidates2(data) {
+    async extractCandidates2(data) {
         return null
     }
 

@@ -314,7 +314,7 @@ class ZhilianParser extends BaseParser {
         return ""
     }
 
-    extractCandidates2(data) {
+   async extractCandidates2(data) {
         // 使用通用查找函数查找元素，尝试多种方法（同步模式）
         const result = this.findElementsByMultipleMethods(".new-shortcut-resume--wrapper", {
             includeHidden: false,  // 不包含隐藏元素

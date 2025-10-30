@@ -52,6 +52,7 @@ class BaseParser {
         const allText = candidate
 
         if (allText == null) {
+            // alert("插件获取候选人文本失败");
             return false;
         }
       

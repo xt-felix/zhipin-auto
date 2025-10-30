@@ -75,7 +75,7 @@ class LiepinParser extends BaseParser {
 
         return data2;
     }
-    extractCandidates2(data) {
+    asyncextractCandidates2(data) {
           // 使用通用查找函数查找元素，尝试多种方法（同步模式）
         const result = this.findElementsByMultipleMethods(".content--dw5Ml", {
             includeHidden: false,  // 不包含隐藏元素
@@ -86,6 +86,7 @@ class LiepinParser extends BaseParser {
         
         if (result.elements && result.elements.length > 0) {
             // console.log("成功找到元素，使用方法:", result.method);
+            
            return result.elements[0].textContent;
         } else {
             // console.log("未能找到目标元素:", result.message);

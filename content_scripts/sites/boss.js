@@ -173,7 +173,8 @@ class BossParser extends BaseParser {
     }
 
     //第二次组装。无需
-    extractCandidates2(data) {
+    async extractCandidates2(data) {
+        
         return null
     }
 

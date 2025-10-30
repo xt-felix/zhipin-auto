@@ -566,11 +566,13 @@ async function processElement(element, doc) {
 
                         try {
                             //第二次组装信息
-                            let data2 = currentParser.extractCandidates2(candidate);
-                            if (data2 != null) {
-                                simpleCandidateInfo = data2
-                                
-                            }
+                            
+
+                            
+                            let data2 = await currentParser.extractCandidates2(candidate);
+                             simpleCandidateInfo = data2
+                             console.log("第二次组装信息:",simpleCandidateInfo);
+
                         } catch (error) {
                             console.error('第二次组装信息失败:', error);
                         }
