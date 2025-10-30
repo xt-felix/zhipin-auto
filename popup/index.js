@@ -444,6 +444,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 			}
 		});
 
+		// 添加平台切换事件监听器
+		const platformRadios = document.querySelectorAll('input[name="ai-platform"]');
+		platformRadios.forEach(radio => {
+			radio.addEventListener('change', function() {
+				togglePlatformConfig(this.value);
+			});
+		});
+
 		// AI提示语自动保存功能
 		const aiClickPrompt = document.getElementById('ai-click-prompt');
 		if (aiClickPrompt) {
@@ -821,6 +829,34 @@ async function startAutoScroll() {
 		isRunning = true;
 		matchCount = 0;
 		updateUI();
+		
+		// 保存运行状态和AI到期时间到chrome.storage，供广告显示逻辑使用
+		const storageData = {
+			isRunning: true
+		};
+		
+		// 如果有AI到期时间，也保存到storage
+		if (serverData.ai_expire_time) {
+			storageData.ai_expire_time = serverData.ai_expire_time;
+		}
+		
+		await chrome.storage.local.set(storageData);
+		
+		// 通知content script显示广告
+		chrome.tabs.query({
+			active: true,
+			currentWindow: true
+		}, tabs => {
+			if (tabs[0]) {
+				chrome.tabs.sendMessage(tabs[0].id, {
+					action: 'SHOW_ADS'
+				}, response => {
+					if (chrome.runtime.lastError) {
+						console.log('通知显示广告失败:', chrome.runtime.lastError);
+					}
+				});
+			}
+		});
 
 		// 获取统一的设置值（AI模式和免费模式使用相同的设置）
 		const matchLimitInput = document.getElementById('match-limit');
@@ -964,10 +1000,22 @@ async function stopAutoScroll() {
 					}
 					console.log('停止响应:', response);
 				});
+				
+				// 通知content script移除广告
+				chrome.tabs.sendMessage(tabs[0].id, {
+					action: 'REMOVE_ADS'
+				}, response => {
+					if (chrome.runtime.lastError) {
+						console.log('通知移除广告失败:', chrome.runtime.lastError);
+					}
+				});
 			}
 		});
 
-		await saveState();  // 保存状态
+		// 保存状态，包括运行状态和AI到期时间
+		await chrome.storage.local.set({
+			isRunning: false
+		});
 	} catch (error) {
 		console.error('停止失败:', error);
 		addLog('停止失败: ' + error.message, 'error');
@@ -1908,9 +1956,20 @@ async function loadAIConfig() {
 
 // 更新AI配置UI
 function updateAIConfigUI() {
-	document.getElementById('ai-token').value = serverData.ai_config.token;
+	// 处理平台选择
+	const platform = serverData.ai_config.platform || 'siliconflow';
+	const platformRadios = document.querySelectorAll('input[name="ai-platform"]');
+	platformRadios.forEach(radio => {
+		radio.checked = radio.value === platform;
+	});
+	
+	// 切换显示对应平台的配置
+	togglePlatformConfig(platform);
 
-	// 处理模型选择
+	// 轨迹流动配置
+	document.getElementById('ai-token').value = serverData.ai_config.token || '';
+
+	// 处理轨迹流动模型选择
 	const modelSelect = document.getElementById('ai-model');
 	const customModelInput = document.getElementById('ai-custom-model');
 
@@ -1929,8 +1988,33 @@ function updateAIConfigUI() {
 	} else {
 		// 自定义模型
 		modelSelect.value = 'custom';
-		customModelInput.value = serverData.ai_config.model;
+		customModelInput.value = serverData.ai_config.model || '';
 		customModelInput.style.display = 'block';
+	}
+
+	// 火山引擎配置
+	if (serverData.ai_config.volcengine) {
+		document.getElementById('volcengine-api-key').value = serverData.ai_config.volcengine.apiKey || '';
+		
+		// 处理火山引擎模型选择
+		const volcengineModelSelect = document.getElementById('volcengine-model');
+		const volcengineCustomModelInput = document.getElementById('volcengine-custom-model');
+		
+		const volcenginePresetModels = [
+			'doubao-seed-1-6-251015',
+			'doubao-seed-1-6-lite-251015',
+			'doubao-seed-1-6-flash-250828'
+		];
+		
+		if (volcenginePresetModels.includes(serverData.ai_config.volcengine.model)) {
+			volcengineModelSelect.value = serverData.ai_config.volcengine.model;
+			volcengineCustomModelInput.style.display = 'none';
+		} else {
+			// 自定义模型
+			volcengineModelSelect.value = 'custom';
+			volcengineCustomModelInput.value = serverData.ai_config.volcengine.model || '';
+			volcengineCustomModelInput.style.display = 'block';
+		}
 	}
 
 	// 更新提示语输入框
@@ -1952,39 +2036,109 @@ function hideAIConfigModal() {
 	document.getElementById('ai-config-modal').style.display = 'none';
 }
 
+// 平台切换功能
+function togglePlatformConfig(selectedPlatform) {
+	const siliconflowConfig = document.getElementById('siliconflow-config');
+	const volcengineConfig = document.getElementById('volcengine-config');
+	
+	if (selectedPlatform === 'siliconflow') {
+		siliconflowConfig.style.display = 'block';
+		volcengineConfig.style.display = 'none';
+	} else if (selectedPlatform === 'volcengine') {
+		siliconflowConfig.style.display = 'none';
+		volcengineConfig.style.display = 'block';
+	}
+}
+
 // 保存AI配置
 async function saveAIConfig() {
 	try {
-		serverData.ai_config.token = document.getElementById('ai-token').value.trim();
+		// 处理平台选择
+		const selectedPlatform = document.querySelector('input[name="ai-platform"]:checked').value;
+		serverData.ai_config.platform = selectedPlatform;
 
-		// 处理模型设置
-		const modelSelect = document.getElementById('ai-model');
-		const customModelInput = document.getElementById('ai-custom-model');
+		if (selectedPlatform === 'siliconflow') {
+			// 轨迹流动配置
+			serverData.ai_config.token = document.getElementById('ai-token').value.trim();
 
-		if (modelSelect.value === 'custom') {
-			serverData.ai_config.model = customModelInput.value.trim();
-		} else {
-			serverData.ai_config.model = modelSelect.value;
+			// 处理模型设置
+			const modelSelect = document.getElementById('ai-model');
+			const customModelInput = document.getElementById('ai-custom-model');
+
+			if (modelSelect.value === 'custom') {
+				serverData.ai_config.model = customModelInput.value.trim();
+			} else {
+				serverData.ai_config.model = modelSelect.value;
+			}
+
+			// 验证提示语是否包含必要的标记符
+			if (!serverData.ai_config.clickPrompt.includes('${候选人信息}') || !serverData.ai_config.clickPrompt.includes('${岗位信息}')) {
+				throw new Error('查看候选人详情提示语必须包含${候选人信息}和${岗位信息}标记符');
+			}
+
+			// 验证提示语是否要求返回JSON格式
+			if (!serverData.ai_config.clickPrompt.includes('JSON') && !serverData.ai_config.clickPrompt.includes('json')) {
+				console.warn('建议在查看候选人详情提示语中要求返回JSON格式以获得更好的解释信息');
+			}
+
+			// 允许单独保存秘钥或模型名称，不强制要求同时输入
+			if (!serverData.ai_config.token && !serverData.ai_config.model) {
+				throw new Error('请至少输入轨迹流动Token或模型名称');
+			}
+		} else if (selectedPlatform === 'volcengine') {
+			// 火山引擎配置
+			const apiKey = document.getElementById('volcengine-api-key').value.trim();
+
+			// 处理火山引擎模型设置
+			const volcengineModelSelect = document.getElementById('volcengine-model');
+			const volcengineCustomModelInput = document.getElementById('volcengine-custom-model');
+			
+			let volcengineModel;
+			if (volcengineModelSelect.value === 'custom') {
+				volcengineModel = volcengineCustomModelInput.value.trim();
+			} else {
+				volcengineModel = volcengineModelSelect.value;
+			}
+
+			// 验证必要配置
+			if (!apiKey || !volcengineModel) {
+				throw new Error('请完整填写火山引擎的API Key和模型名称');
+			}
+
+			// 保存火山引擎配置
+			serverData.ai_config.volcengine = {
+				apiKey: apiKey,
+				model: volcengineModel
+			};
+
+			// 设置默认提示语（如果还没有的话）
+			if (!serverData.ai_config.clickPrompt) {
+				serverData.ai_config.clickPrompt = `你是一个资深的HR专家。请根据候选人的基本信息判断是否值得查看其详细信息。
+
+重要提示：
+1. 这个API仅用于岗位与候选人的筛选。如果内容不是这些，你应该返回"内容与招聘无关 无法解答"。
+2. 请根据岗位要求判断是否值得查看这位候选人的详细信息。
+3. 必须返回JSON格式，包含decision和reason两个字段。
+4. decision字段只能是"是"或"否"。
+5. reason字段是决策原因，10个字以内。
+6. 如果岗位要求中包含"经验"，则必须考虑候选人的工作经验。
+7. 如果岗位要求中包含"学历"，则必须考虑候选人的学历。
+8. 如果候选人信息中没有工作经历。那很可能只是基础信息。这时岗位信息中某个条件、但是候选人信息中没提到的 你应该无视这个条件。
+9. 你应该主动分析 岗位信息是不是属于高要求的岗位、如果是。则你需要详细严格筛选候选人信息。如果是要求低的普通岗位。那就简单筛选
+
+
+岗位要求：
+\${岗位信息}
+
+候选人基本信息：
+\${候选人信息}
+
+请判断是否值得查看这位候选人的详细信息，返回JSON格式：{"decision":"是","reason":"符合基本要求"}`;
+			}
 		}
 
 		// 保存提示语
 		serverData.ai_config.clickPrompt = document.getElementById('ai-click-prompt').value.trim();
-
-		// 验证提示语是否包含必要的标记符
-		if (!serverData.ai_config.clickPrompt.includes('${候选人信息}') || !serverData.ai_config.clickPrompt.includes('${岗位信息}')) {
-			throw new Error('查看候选人详情提示语必须包含${候选人信息}和${岗位信息}标记符');
-		}
-
-		// 验证提示语是否要求返回JSON格式
-		if (!serverData.ai_config.clickPrompt.includes('JSON') && !serverData.ai_config.clickPrompt.includes('json')) {
-			console.warn('建议在查看候选人详情提示语中要求返回JSON格式以获得更好的解释信息');
-		}
-
-		// 允许单独保存秘钥或模型名称，不强制要求同时输入
-		if (!serverData.ai_config.token && !serverData.ai_config.model) {
-			throw new Error('请至少输入轨迹流动Token或模型名称');
-		}
-
 		serverData.ai_config.contactPrompt = null;
 
 		// 使用统一的saveSettings方法保存所有设置，包括AI配置
@@ -1995,9 +2149,15 @@ async function saveAIConfig() {
 		// 检查AI连接
 		checkAIConnection();
 
-		// 检查余额（如果在AI页面且有token）
-		if (currentTab === 'ai' && serverData.ai_config.token) {
-			handleBalanceCheck();
+		// 检查余额（如果在AI页面且有必要的认证信息）
+		if (currentTab === 'ai') {
+			const hasAuth = (selectedPlatform === 'siliconflow' && serverData.ai_config.token) ||
+						  (selectedPlatform === 'volcengine' && 
+						   serverData.ai_config.volcengine?.apiKey);
+			
+			if (hasAuth) {
+				handleBalanceCheck();
+			}
 		}
 	} catch (error) {
 		addLog('保存AI配置失败: ' + error.message, 'error');
@@ -2010,42 +2170,63 @@ async function saveAIConfig() {
 async function checkAIConnection() {
 	const statusIndicator = document.getElementById('ai-status-indicator');
 	const statusText = document.getElementById('ai-status-text');
+	
+	const selectedPlatform = serverData.ai_config.platform || 'siliconflow';
 
-	// 检查是否有Token或模型名称
-	if (!serverData.ai_config.token && !serverData.ai_config.model) {
+	// 检查是否有必要配置
+	if (((selectedPlatform === 'siliconflow' && !serverData.ai_config.token) || 
+		 (selectedPlatform === 'volcengine' && !serverData.ai_config.volcengine?.apiKey)) && 
+		!serverData.ai_config.model) {
 		statusIndicator.className = 'ai-status-indicator disconnected';
 		statusText.textContent = '未配置';
 		hideBalanceDisplay(); // 未配置时隐藏余额显示
 		return;
 	}
 
-	// 如果有Token，尝试连接测试
-	if (serverData.ai_config.token) {
+	// 如果有必要的认证信息，尝试连接测试
+	let hasAuth = false;
+	if (selectedPlatform === 'siliconflow' && serverData.ai_config.token) {
+		hasAuth = true;
+	} else if (selectedPlatform === 'volcengine' && 
+			   serverData.ai_config.volcengine?.apiKey) {
+		hasAuth = true;
+	}
+
+	if (hasAuth) {
 		try {
 			statusIndicator.className = 'ai-status-indicator';
 			statusText.textContent = '连接中...';
 
-			// 直接调用轨迹流动API进行测试
+			// 直接调用相应平台API进行测试
 			const testPrompt = '你好，这是一个连接测试。请回复"连接成功"。';
 			const result = await sendDirectAIRequest(testPrompt);
 
 			if (result.success) {
 				statusIndicator.className = 'ai-status-indicator connected';
 				statusText.textContent = '已连接';
+				
+				// 连接成功后检查余额
+				handleBalanceCheck();
 			} else {
 				statusIndicator.className = 'ai-status-indicator disconnected';
 				statusText.textContent = '连接失败: ' + result.error;
+				hideBalanceDisplay(); // 连接失败时隐藏余额显示
 			}
 		} catch (error) {
 			statusIndicator.className = 'ai-status-indicator disconnected';
 			statusText.textContent = '连接失败';
 			console.error('AI连接测试失败:', error);
+			hideBalanceDisplay(); // 异常时隐藏余额显示
 		}
 	} else {
-		// 只有模型名称，没有Token
+		// 缺少认证信息
 		statusIndicator.className = 'ai-status-indicator disconnected';
-		statusText.textContent = '缺少Token(前往官网里查看配置教程(goodhr.58it.cn))';
-		hideBalanceDisplay(); // 没有Token时隐藏余额显示
+		if (selectedPlatform === 'siliconflow') {
+			statusText.textContent = '缺少Token(前往官网里查看配置教程(goodhr.58it.cn))';
+		} else {
+			statusText.textContent = '缺少火山引擎认证信息';
+		}
+		hideBalanceDisplay(); // 没有认证信息时隐藏余额显示
 	}
 }
 
@@ -2096,24 +2277,79 @@ async function checkSiliconFlowBalance() {
 	}
 }
 
+// 检查火山引擎账号余额
+async function checkVolcengineBalance() {
+	try {
+		if (!serverData.ai_config.volcengine || 
+			!serverData.ai_config.volcengine.apiKey) {
+			return { success: false, error: '未配置火山引擎API密钥' };
+		}
+
+		// 使用API Key认证方式
+		const response = await fetch('https://open.volcengineapi.com?Action=QueryBalanceAcct&Version=2022-01-01', {
+			method: 'GET',
+			headers: {
+				'Authorization': `Bearer ${serverData.ai_config.volcengine.apiKey}`,
+				'Content-Type': 'application/json'
+			}
+		});
+
+		if (!response.ok) {
+			throw new Error(`API请求失败，HTTP状态码: ${response.status}`);
+		}
+
+		const data = await response.json();
+
+		// 根据火山引擎API文档解析余额信息
+		if (data.Response && data.Response.Balance) {
+			const balance = parseFloat(data.Response.Balance) || 0;
+			return {
+				success: true,
+				balance: balance,
+				userInfo: data.Response
+			};
+		} else {
+			throw new Error(data.Response?.Error?.Message || 'API响应异常');
+		}
+	} catch (error) {
+		console.error('检查火山引擎余额失败:', error);
+		return {
+			success: false,
+			error: error.message
+		};
+	}
+}
+
 // 处理余额检查结果
 async function handleBalanceCheck() {
 	try {
-		addLog('检查API账号余额...', 'info');
-		const result = await checkSiliconFlowBalance();
+		const selectedPlatform = serverData.ai_config.platform || 'siliconflow';
+		
+		addLog(`检查${selectedPlatform === 'siliconflow' ? '轨迹流动' : '火山引擎'}账号余额...`, 'info');
+		
+		let result;
+		if (selectedPlatform === 'siliconflow') {
+			result = await checkSiliconFlowBalance();
+		} else if (selectedPlatform === 'volcengine') {
+			result = await checkVolcengineBalance();
+		}
 
-		if (result.success) {
+		if (result && result.success) {
 			const balance = result.balance;
 			addLog(`账号余额: ¥${balance.toFixed(2)}`, 'info');
 
 			// 更新UI显示余额
-			updateBalanceDisplay(balance);
+			updateBalanceDisplay(balance, selectedPlatform);
 
 			if (balance < 1) {
-				// 余额不足提示
-				const message = `当前Token对应的账号余额不足1元（当前余额: ¥${balance.toFixed(2)}）。\n\n可能会无法使用部分模型。\n\n你可以选择：\n1. 切换免费模型\n2. 前往轨迹流动充值（首次需要实名认证）\n\n是否前往轨迹流动官网充值？`;
+				let message = '';
+				if (selectedPlatform === 'siliconflow') {
+					message = `当前Token对应的账号余额不足1元（当前余额: ¥${balance.toFixed(2)}）。\n\n可能会无法使用部分模型。\n\n你可以选择：\n1. 切换免费模型\n2. 前往轨迹流动充值（首次需要实名认证）\n\n是否前往轨迹流动官网充值？`;
+				} else {
+					message = `当前账号余额不足1元（当前余额: ¥${balance.toFixed(2)}）。\n\n可能会无法使用部分模型。\n\n请前往火山引擎官网充值。`;
+				}
 
-				if (confirm(message)) {
+				if (selectedPlatform === 'siliconflow' && confirm(message)) {
 					// 打开轨迹流动充值页面
 					chrome.tabs.create({ url: 'https://cloud.siliconflow.cn/account/billing' });
 				}
@@ -2123,7 +2359,7 @@ async function handleBalanceCheck() {
 				addLog('余额充足，可正常使用', 'success');
 			}
 		} else {
-			addLog(`余额检查失败: ${result.error}`, 'error');
+			addLog(`余额检查失败: ${result ? result.error : '未知错误'}`, 'error');
 			// 检查失败时隐藏余额显示
 			hideBalanceDisplay();
 		}
@@ -2136,12 +2372,13 @@ async function handleBalanceCheck() {
 }
 
 // 更新余额显示
-function updateBalanceDisplay(balance) {
+function updateBalanceDisplay(balance, platform = 'siliconflow') {
 	const balanceInfo = document.getElementById('ai-balance-info');
 	const balanceText = document.getElementById('ai-balance-text');
 
 	if (balanceInfo && balanceText) {
-		balanceText.textContent = `轨迹流动余额: ¥${balance.toFixed(2)}`;
+		const platformName = platform === 'siliconflow' ? '轨迹流动' : '火山引擎';
+		balanceText.textContent = `${platformName}余额: ¥${balance.toFixed(2)}`;
 
 		// 根据余额设置颜色
 		if (balance < 1) {
@@ -2167,26 +2404,58 @@ function hideBalanceDisplay() {
 // 直接发送AI请求到轨迹流动
 async function sendDirectAIRequest(prompt) {
 	try {
+		const selectedPlatform = serverData.ai_config.platform || 'siliconflow';
 		const model = serverData.ai_config.model;
 
-		const response = await fetch(GUJJI_API_CONFIG.baseUrl, {
-			method: 'POST',
-			headers: {
-				'Authorization': `Bearer ${serverData.ai_config.token}`,
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-				model: model,
-				messages: [
-					{
-						role: 'user',
-						content: prompt
-					}
-				],
-				max_tokens: GUJJI_API_CONFIG.maxTokens,
-				temperature: GUJJI_API_CONFIG.temperature
-			})
-		});
+		let response;
+		if (selectedPlatform === 'siliconflow') {
+			// 轨迹流动平台请求
+			response = await fetch(GUJJI_API_CONFIG.baseUrl, {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${serverData.ai_config.token}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					model: model,
+					messages: [
+						{
+							role: 'user',
+							content: prompt
+						}
+					],
+					max_tokens: GUJJI_API_CONFIG.maxTokens,
+					temperature: GUJJI_API_CONFIG.temperature
+				})
+			});
+		} else if (selectedPlatform === 'volcengine') {
+			// 火山引擎平台请求
+			const volcengineConfig = serverData.ai_config.volcengine || {};
+			const apiKey = volcengineConfig.apiKey;
+			
+			if (!apiKey) {
+				throw new Error('火山引擎API Key未配置');
+			}
+			
+			response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${apiKey}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					model: model,
+					messages: [
+						{
+							role: 'user',
+							content: prompt
+						}
+					],
+					max_tokens: GUJJI_API_CONFIG.maxTokens,
+					temperature: GUJJI_API_CONFIG.temperature
+				})
+			});
+		}
 
 		if (!response.ok) {
 			throw new Error(`API请求失败，HTTP状态码: ${response.status}`);
@@ -2219,7 +2488,6 @@ async function loadAdConfig() {
 		if (response.ok) {
 			adConfig = await response.json();
 			if (adConfig.success) {
-				console.log('广告配置加载成功:', adConfig);
 			} else {
 				console.warn('广告配置加载失败');
 				adConfig = null;

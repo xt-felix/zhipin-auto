@@ -914,26 +914,62 @@
             <button class="close-btn" id="ai-config-close">&times;</button>
             <h3>AI配置</h3>
 
-            <label>轨迹流动Token:</label>
-            <input type="text" id="ai-token" placeholder="请输入您的轨迹流动Token">
-            <div style="font-size: 11px; color: #666; margin-bottom: 10px;">
-                * 获取Token请访问：<a href="https://cloud.siliconflow.cn/" target="_blank">轨迹流动官网</a>
+            <!-- 平台选择 -->
+            <label>AI平台:</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <label style="text-align:center">
+                    <input type="radio" name="ai-platform" value="siliconflow" checked>
+                    <span style="margin-left: 5px;">轨迹流动</span>
+                </label>
+                <label style="text-align:center">
+                    <input type="radio" name="ai-platform" value="volcengine">
+                    <span style="margin-left: 5px;">火山引擎</span>
+                </label>
             </div>
 
-            <label>模型名称:</label>
-            <select id="ai-model">
-                <option value="deepseek-ai/DeepSeek-V3">DeepSeek-V3(快贵)</option>
-                <option value="Qwen/Qwen2.5-7B-Instruct">Qwen/Qwen2.5-7B-Instruct(免费推荐)</option>
-                <option value="THUDM/GLM-4.1V-9B-Thinking">THUDM/GLM-4.1V-9B-Thinking </option>
-                <option value="Qwen/Qwen3-8B">Qwen/Qwen3-8B(便宜)</option>
-                <option value="deepseek-ai/DeepSeek-R1">DeepSeek-R1(慢贵准)</option>
-                <option value="custom">自定义模型</option>
-            </select>
+            <!-- 轨迹流动配置 -->
+            <div id="siliconflow-config">
+                <label>轨迹流动Token:</label>
+                <input type="text" id="ai-token" placeholder="请输入您的轨迹流动Token">
+                <div style="font-size: 11px; color: #666; margin-bottom: 10px;">
+                    * 获取Token请访问：<a href="https://cloud.siliconflow.cn/" target="_blank">轨迹流动官网</a>
+                </div>
 
-            <input type="text" id="ai-custom-model" placeholder="自定义模型名称" style="display: none;">
-            <div>
-                默认使用免费的模型。速度快。但是效果一般。 如果你对精度有要求。建议使用DeepSeek-V3(快贵)。需要先前往轨迹流动充值。
+                <label>模型名称:</label>
+                <select id="ai-model">
+                    <option value="deepseek-ai/DeepSeek-V3">DeepSeek-V3(快贵)</option>
+                    <option value="Qwen/Qwen2.5-7B-Instruct">Qwen/Qwen2.5-7B-Instruct(免费推荐)</option>
+                    <option value="THUDM/GLM-4.1V-9B-Thinking">THUDM/GLM-4.1V-9B-Thinking </option>
+                    <option value="Qwen/Qwen3-8B">Qwen/Qwen3-8B(便宜)</option>
+                    <option value="deepseek-ai/DeepSeek-R1">DeepSeek-R1(慢贵准)</option>
+                    <option value="custom">自定义模型</option>
+                </select>
+
+                <input type="text" id="ai-custom-model" placeholder="自定义模型名称" style="display: none;">
+                <div>
+                    默认使用免费的模型。速度快。但是效果一般。 如果你对精度有要求。建议使用DeepSeek-V3(快贵)。需要先前往轨迹流动充值。
+                </div>
             </div>
+
+            <!-- 火山引擎配置 -->
+            <div id="volcengine-config" style="display: none;">
+                <label>火山引擎API Key:</label>
+                <input type="password" id="volcengine-api-key" placeholder="请输入您的API Key">
+                
+                <label>模型名称:</label>
+                <select id="volcengine-model">
+                    <option value="doubao-seed-1-6-251015">doubao-seed-1-6-(专业版)</option>
+                    <option value="doubao-seed-1-6-lite-251015">doubao-seed-1-6-lite(轻量级)</option>
+                    <option value="doubao-seed-1-6-flash-250828">doubao-seed-1-6-flash(快速版)</option>
+                    <option value="custom">自定义模型</option>
+                </select>
+
+                <input type="text" id="volcengine-custom-model" placeholder="自定义模型名称" style="display: none;">
+                <div>
+                    火山引擎平台模型。请确保您已正确配置相关权限。
+                </div>
+            </div>
+
             <button class="save-btn" id="ai-config-save2">保存配置</button>
 
         </div>

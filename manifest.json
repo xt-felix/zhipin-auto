@@ -28,7 +28,8 @@
 			"resources": [
 				"content_scripts/sites/*.js",
 				"sounds/*.mp3",
-				"config.js"
+				"config.js",
+				"ads.json"
 			],
 			"matches": [
 				"<all_urls>"
