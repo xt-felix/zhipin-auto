@@ -12,6 +12,7 @@ class HLiepinParser extends BaseParser {
             university: 'J1lRR',
             description: 'new-resume-personal-expect',
             clickTarget: 'ant-btn ant-btn-default ant-btn-lg lp-ant-btn-light',
+            confirmClickTarget: 'ant-btn ant-btn-primary ant-btn-lg btn-ok xpath-job-and-msg-ok-btn-new',
             extraSelectors: 'J1lRR',
             onlineStatus: 'new-resume-offline'
         };
@@ -521,16 +522,29 @@ class HLiepinParser extends BaseParser {
     }
 
     // 实现点击打招呼按钮
-    clickMatchedItem(element) {
+    async clickMatchedItem(element) {
         try {
             const clickElement = this.getElementByClassPrefix(element, this.selectors.clickTarget);
             if (clickElement) {
                 clickElement.click();
-                return true;
+                // return true;
             } else {
                 console.error('未找到可点击的元素');
                 return false;
             }
+//等待500毫秒
+             await new Promise(resolve => setTimeout(resolve, 500));
+
+             // 点击确认按钮
+             const confirmClickElement = this.getElementByClassPrefix(document, this.selectors.confirmClickTarget);
+             if (confirmClickElement) {
+                confirmClickElement.click();
+                return true;
+             } else {
+                console.error('未找到确认点击的元素');
+                return false;
+             }
+
         } catch (error) {
             console.error('点击元素时出错:', error);
             return false;

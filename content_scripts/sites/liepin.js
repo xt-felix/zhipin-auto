@@ -395,7 +395,7 @@ class LiepinParser extends BaseParser {
     }
 
     // 实现点击打招呼按钮
-    clickMatchedItem(element) {
+    async clickMatchedItem(element) {
         try {
             const clickElement = this.getElementByClassPrefix(element, this.selectors.clickTarget);
             if (clickElement) {

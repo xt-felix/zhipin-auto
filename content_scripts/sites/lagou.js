@@ -25,7 +25,7 @@ class LagouParser extends BaseParser {
         }
     }
 
-    clickMatchedItem(element) {
+    async clickMatchedItem(element) {
         try {
             const clickElement = this.getElementByClassPrefix(element, this.selectors.clickTarget);
             if (clickElement) {

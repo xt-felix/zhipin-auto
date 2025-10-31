@@ -634,7 +634,7 @@ async function processElement(element, doc) {
 
                     addHighlightReason(targetElement, '已打招呼(' + AiMsg + ')', '#4caf50');
 
-                    const clicked = currentParser.clickMatchedItem(element);
+                    const clicked = await currentParser.clickMatchedItem(element);
                     if (clicked) {
                         matchCount++;
                         console.log(`打招呼成功，当前计数: ${matchCount}/${matchLimit}`);

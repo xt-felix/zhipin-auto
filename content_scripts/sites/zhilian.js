@@ -385,7 +385,7 @@ class ZhilianParser extends BaseParser {
 
 
     // 重写点击打招呼的方法
-    clickMatchedItem(element) {
+    async clickMatchedItem(element) {
         try {
 
             // 包含部分类名
