@@ -142,6 +142,7 @@ class BaseParser {
     shouldClickCandidate() {
         if (!this.clickCandidateConfig.enabled) return false;
         let random = Math.random() * 10;
+        // return false;
         return random <= (this.clickCandidateConfig.frequency);
     }
 

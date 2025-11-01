@@ -12,9 +12,13 @@ class HLiepinParser extends BaseParser {
             university: 'J1lRR',
             description: 'new-resume-personal-expect',
             clickTarget: 'ant-btn ant-btn-default ant-btn-lg lp-ant-btn-light',
-            confirmClickTarget: 'ant-btn ant-btn-primary ant-btn-lg btn-ok xpath-job-and-msg-ok-btn-new',
+            confirmClickTarget: 'ant-btn ant-btn-link ant-btn-lg btn-cancel directly-open-chat-btn',
             extraSelectors: 'J1lRR',
-            onlineStatus: 'new-resume-offline'
+            onlineStatus: 'new-resume-offline',
+            // 分页相关选择器
+            nextPageButton: 'ant-pagination-next',
+            paginationContainer: 'ant-pagination',
+            disabledClass: 'ant-pagination-disabled'
         };
 
         this.urlInfo = {
@@ -29,7 +33,115 @@ class HLiepinParser extends BaseParser {
             viewButton: '.ant-lpt-btn.ant-lpt-btn-primary' // 查看按钮
         };
     }
-  /**
+
+    // 添加sendMessage函数用于与index.js通信
+    sendMessage(message) {
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage(message);
+        }
+    }
+    // 检查是否到达页面底部
+    isAtBottomOfPage() {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        
+        // 距离底部200px内认为到达底部
+        const isNearBottom = scrollTop + windowHeight >= documentHeight - 200;
+        
+        // 检查是否有加载更多或无更多数据的提示
+        const hasNoMoreData = document.querySelector('[class*="no-more"], [class*="no-data"], [class*="end"]');
+        
+        // 检查是否有加载中的指示器
+        const hasLoadingIndicator = document.querySelector('[class*="loading"], [class*="spinner"]');
+        
+        console.log(`页面滚动位置检查: scrollTop=${scrollTop}, windowHeight=${windowHeight}, documentHeight=${documentHeight}`);
+        console.log(`是否接近底部: ${isNearBottom}, 是否无更多数据: ${!!hasNoMoreData}, 是否正在加载: ${!!hasLoadingIndicator}`);
+        
+        return isNearBottom && !hasLoadingIndicator;
+    }
+
+    // 检查是否有下一页按钮且可用
+    hasNextPageButton() {
+        const nextPageButton = document.querySelector(`[class*="${this.selectors.nextPageButton}"]`);
+        if (!nextPageButton) {
+            return false;
+        }
+        
+        // 检查按钮是否被禁用
+        return !nextPageButton.classList.contains(this.selectors.disabledClass);
+    }
+
+    // 点击下一页按钮
+    async clickNextPageButton() {
+        try {
+            const nextPageButton = document.querySelector(`[class*="${this.selectors.nextPageButton}"]`);
+            if (nextPageButton && !nextPageButton.classList.contains(this.selectors.disabledClass)) {
+                console.log('找到下一页按钮，准备点击');
+                nextPageButton.click();
+                
+                // 等待页面开始加载
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // 等待页面加载完成，检查是否有候选人元素出现
+                let pageLoaded = false;
+                let attempts = 0;
+                const maxAttempts = 10; // 最多尝试10次，每次间隔1秒
+                
+                while (!pageLoaded && attempts < maxAttempts) {
+                    // 检查是否有候选人元素
+                    const items = document.querySelectorAll(`[class*="${this.selectors.items}"]`);
+                    if (items.length > 0) {
+                        console.log(`页面加载完成，找到 ${items.length} 个候选人元素`);
+                        pageLoaded = true;
+                    } else {
+                        console.log(`等待页面加载... 尝试 ${attempts + 1}/${maxAttempts}`);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        attempts++;
+                    }
+                }
+                
+                if (!pageLoaded) {
+                    console.warn('页面加载超时，但继续执行');
+                }
+                
+                // 重置滚动位置
+                window.scrollTo(0, 0);
+                
+                // 通过发送消息给index.js来重置lastProcessedPosition
+                this.sendMessage({
+                    action: 'RESET_POSITION',
+                    data: {}
+                });
+                
+                console.log('已点击下一页按钮，等待新页面加载');
+                return true;
+            }else{
+                console.log("下一页按钮不可用");
+            }
+            return false;
+        } catch (error) {
+            console.error('点击下一页按钮失败:', error);
+            return false;
+        }
+    }
+
+    // 检查是否需要翻页
+    shouldNavigateToNextPage(elements) {
+        // 如果没有找到任何元素，或者已经到达页面底部，则可能需要翻页
+        // if (elements.length === 0 || this.isAtBottomOfPage()) {
+
+        //     if(this.hasNextPageButton()){
+        //         this.clickNextPageButton()
+        //     }
+        //     return this.hasNextPageButton();
+        // }
+        console.log("检测是否需要分页");
+        
+        return true;
+    }
+
+    /**
      * 查找同事沟通记录
      * @param {*} data
      * @returns
@@ -78,133 +190,59 @@ class HLiepinParser extends BaseParser {
         return data2;
     }
     async extractCandidates2(data) {
-
-        //等待1秒，确保元素加载完成
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             // 存储所有响应
             const responses = [];
+            let pollCount = 0;
+            const maxPolls = 20; // 最多轮询20次，每次间隔500ms，总共10秒
             
-            // 设置超时时间 - 增加到5秒，确保有足够时间等待响应
-            const timeout = setTimeout(() => {
-                // 清理所有监听器
-                window.removeEventListener('message', messageHandler);
-                window.removeEventListener('storage', storageHandler);
-                if (channel) {
-                    channel.close();
-                }
-                
-                // 超时后处理收集到的响应
-                if (responses.length === 0) {
-                    reject(new Error('获取候选人详细信息超时，未收到任何响应'));
-                } else {
-                    // 尝试通过名字匹配找到正确的响应
-                    const matchedResponse = this.findMatchingResponse(responses, data);
-
-                    // console.log("匹配到的响应:", matchedResponse);
-                    // return matchedResponse;
-                    resolve(matchedResponse);
-
-                }
-            }, 5000); // 5秒超时，等待所有响应
+            console.log('开始轮询localStorage中的候选人信息...');
             
-            // 定义消息处理函数
-            const messageHandler = (event) => {
-                // 检查消息来源和类型
-                if (event.data && 
-                    event.data.source === 'goodhr-plugin' && 
-                    event.data.type === 'candidate-detail-response') {
+            // 轮询函数
+            const pollLocalStorage = () => {
+                try {
+                    const storedData = localStorage.getItem('goodhr-candidate-detail');
+                    if (storedData) {
+                        const data = JSON.parse(storedData);
+                        // 检查数据类型和时效性
+                        if (data.source === 'goodhr-plugin' && 
+                            data.type === 'candidate-detail-response') {
+                            responses.push(data);
+                            console.log(`从localStorage获取到候选人信息:`, data.data);
+                            
+                            // 读取后立即删除缓存
+                            localStorage.removeItem('goodhr-candidate-detail');
+                            console.log('已删除localStorage中的候选人信息缓存');
+                            
+                            // 处理获取到的响应
+                            const matchedResponse = this.findMatchingResponse(responses, data);
+                            resolve(matchedResponse);
+                            return;
+                        }
+                    }
                     
-                    // 接收所有响应
-                    // 添加到响应列表
-                    responses.push(event.data);
-
-                    console.log(`通过postMessage收到第${responses.length}个响应:`, event.data.data);
+                    pollCount++;
+                    if (pollCount >= maxPolls) {
+                        reject(new Error('获取候选人详细信息超时，未收到任何响应'));
+                        return;
+                    }
+                    
+                    // 继续轮询
+                    setTimeout(pollLocalStorage, 500);
+                } catch (e) {
+                    console.error('从localStorage获取数据失败:', e);
+                    pollCount++;
+                    if (pollCount >= maxPolls) {
+                        reject(new Error('获取候选人详细信息时出错'));
+                        return;
+                    }
+                    setTimeout(pollLocalStorage, 500);
                 }
             };
             
-            // 定义storage事件处理函数
-            const storageHandler = (event) => {
-                if (event.key === 'goodhr-candidate-detail' && event.newValue) {
-                    try {
-                        const data = JSON.parse(event.newValue);
-                        if (data.source === 'goodhr-plugin' && data.type === 'candidate-detail-response') {
-                            responses.push(data);
-                            console.log(`通过localStorage收到第${responses.length}个响应:`, data.data);
-                        }
-                    } catch (e) {
-                        console.error('解析localStorage数据失败:', e);
-                    }
-                }
-            };
-            
-            // 尝试创建BroadcastChannel
-            let channel = null;
-            try {
-                channel = new BroadcastChannel('goodhr-plugin');
-                channel.onmessage = (event) => {
-                    if (event.data && 
-                        event.data.source === 'goodhr-plugin' && 
-                        event.data.type === 'candidate-detail-response') {
-                        
-                        responses.push(event.data);
-                        // console.log(`通过BroadcastChannel收到第${responses.length}个响应:`, event.data.data);
-                    }
-                };
-            } catch (e) {
-                console.log('BroadcastChannel不可用:', e);
-            }
-            
-            // 添加事件监听器
-            window.addEventListener('message', messageHandler);
-            window.addEventListener('storage', storageHandler);
-            
-            // 检查localStorage中是否已有数据
-            try {
-                const storedData = localStorage.getItem('goodhr-candidate-detail');
-                if (storedData) {
-                    const data = JSON.parse(storedData);
-                    // 检查数据是否是最近的（5秒内）
-                    if (data.timestamp && (Date.now() - data.timestamp < 5000)) {
-                        if (data.source === 'goodhr-plugin' && data.type === 'candidate-detail-response') {
-                            responses.push(data);
-                            console.log(`从localStorage获取到最近的候选人信息:`, data.data);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('从localStorage获取数据失败:', e);
-            }
-            
-            // 生成一个唯一的请求ID
-            const requestId = 'req-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-            
-            // 发送请求给injector，让它发送候选人信息
-            try {
-                // 尝试使用BroadcastChannel API
-                const reqChannel = new BroadcastChannel('goodhr-plugin');
-                reqChannel.postMessage({
-                    source: 'goodhr-plugin',
-                    type: 'get-candidate-detail',
-                    requestId: requestId
-                });
-                console.log('通过BroadcastChannel发送获取候选人信息请求');
-            } catch (e) {
-                console.log('BroadcastChannel不可用，使用postMessage发送请求');
-                // 备选方案：使用postMessage
-                window.postMessage({
-                    source: 'goodhr-plugin',
-                    type: 'get-candidate-detail',
-                    requestId: requestId
-                }, '*');
-            }
-            
-            console.log('等待接收候选人详细信息...');
+            // 开始轮询
+            pollLocalStorage();
         });
-
-
-
     }
     
     // 通过名字匹配找到正确的响应
@@ -515,7 +553,6 @@ class HLiepinParser extends BaseParser {
             throw error;
         }
 
-        console.log('提取到的候选人信息:', candidates);
         
 
         return candidates;
@@ -533,7 +570,7 @@ class HLiepinParser extends BaseParser {
                 return false;
             }
 //等待500毫秒
-             await new Promise(resolve => setTimeout(resolve, 500));
+             await new Promise(resolve => setTimeout(resolve, 1000));
 
              // 点击确认按钮
              const confirmClickElement = this.getElementByClassPrefix(document, this.selectors.confirmClickTarget);
@@ -554,6 +591,11 @@ class HLiepinParser extends BaseParser {
     // 实现点击候选人详情方法
     async clickCandidateDetail(element) {
         try {
+            // 在点击候选人之前，添加时间戳到localStorage
+            const clickTimestamp = Date.now();
+            localStorage.setItem('goodhr-candidate-click-timestamp', clickTimestamp.toString());
+            console.log('已添加候选人点击时间戳:', clickTimestamp);
+            
             // 首先尝试点击姓名链接
             const detailLink = this.getElementByClassPrefix(element, this.detailSelectors.detailLink);
 

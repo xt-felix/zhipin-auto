@@ -1,174 +1,131 @@
 // 猎聘网拦截器注入器 - 在document_start时运行 
-console.log('✅ 猎聘网拦截器注入器已加载'); 
+// console.log('✅ 猎聘网拦截器注入器已加载'); 
 
-// 页面加载完成后，准备候选人信息但不立即发送
-window.addEventListener('load', function() {
-    setTimeout(() => {
-        // 检查当前页面是否包含候选人信息
-        if (isCandidateDetailPage()) {
-            console.log('页面加载完成，候选人信息已准备就绪');
-            // 不再自动发送消息，而是等待extractCandidates2的请求
+// 页面加载完成后，准备候选人信息
+window.addEventListener('load', async function() {
+    // console.log('页面加载完成，开始准备候选人信息');
+    
+    // 检查是否是候选人详情页
+    if (isCandidateDetailPage()) {
+        // console.log('确认为候选人详情页，开始准备信息');
+        
+        // 检查时间戳，判断是否是插件自动点击
+        const clickTimestamp = localStorage.getItem('goodhr-candidate-click-timestamp');
+        const currentTime = Date.now();
+        
+        if (clickTimestamp) {
+            const timeDiff = currentTime - parseInt(clickTimestamp);
+            // console.log(`点击时间戳: ${clickTimestamp}, 当前时间: ${currentTime}, 时间差: ${timeDiff}ms`);
+            
+            // 如果时间差小于10秒，则是插件自动点击
+            if (timeDiff < 10000) {
+                // console.log('确认为插件自动点击，继续处理候选人信息');
+                await processCandidateDetail();
+            } else {
+                // console.log('时间差超过10秒，可能是用户手动点击，不处理');
+                localStorage.removeItem('goodhr-candidate-click-timestamp'); // 清除旧的时间戳
+
+                return false;
+                // window.close();
+            }
+        } else {
+            console.log('未找到点击时间戳，可能是用户手动点击，不处理');
+            // window.close();
         }
-    }, 1000); // 延迟1秒确保页面完全加载
+    } else {
+        console.log('不是候选人详情页，不处理');
+        // window.close();
+    }
 });
 
-// 监听来自content script的跨标签通信消息 
-window.addEventListener('message', function(event) { 
-    // 安全检查：确保消息来源是同一个窗口 
-    if (event.source !== window) return; 
-    
-    // 检查消息是否来自我们的插件 
-    if (event.data && event.data.source === 'goodhr-plugin' && event.data.type === 'get-candidate-detail') { 
-        console.log('收到获取候选人详细信息的请求'); 
-        
-        // 检查当前页面是否包含候选人信息 
-        if (!isCandidateDetailPage()) { 
-            console.log('当前页面不是候选人详情页，忽略请求'); 
-            return; 
-        } 
-        
-        // 获取候选人详细信息 
-        const candidateDetail = extractCandidateDetail(); 
+// 处理候选人详情的函数
+async function processCandidateDetail() {
+    try {
+        // 准备候选人详细信息
+        const candidateDetail = await extractCandidateDetail();
+        // console.log('候选人信息准备完成:', candidateDetail);
         
         // 生成一个唯一的请求ID
-        const requestId = 'resp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        const requestId = 'req-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        // console.log('准备存储候选人信息到缓存，requestId:', requestId);
         
-        // 将获取到的信息发送回content script
-        // 使用broadcastChannel确保所有窗口都能收到消息
-        try {
-            // 尝试使用BroadcastChannel API
-            const channel = new BroadcastChannel('goodhr-plugin');
-            channel.postMessage({
-                source: 'goodhr-plugin',
-                type: 'candidate-detail-response',
-                data: candidateDetail,
-                requestId: requestId
-            });
-            console.log('通过BroadcastChannel发送候选人信息成功');
-            
-            // 发送完成后关闭标签页
-            setTimeout(() => {
-                console.log('候选人信息已发送，准备关闭标签页');
-                window.close();
-            }, 1000); // 延迟1000毫秒确保消息发送完成
-        } catch (e) {
-            console.log('BroadcastChannel不可用，使用localStorage作为备选方案');
-            // 备选方案：使用localStorage进行跨标签通信
-            localStorage.setItem('goodhr-candidate-detail', JSON.stringify({
-                source: 'goodhr-plugin',
-                type: 'candidate-detail-response',
-                data: candidateDetail,
-                requestId: requestId,
-                timestamp: Date.now()
-            }));
-            
-            // 触发storage事件
-            window.dispatchEvent(new StorageEvent('storage', {
-                key: 'goodhr-candidate-detail',
-                newValue: JSON.stringify({
-                    source: 'goodhr-plugin',
-                    type: 'candidate-detail-response',
-                    data: candidateDetail,
-                    requestId: requestId,
-                    timestamp: Date.now()
-                })
-            }));
-            console.log('通过localStorage发送候选人信息成功');
-            
-            // 发送完成后关闭标签页
-            setTimeout(() => {
-                console.log('候选人信息已发送，准备关闭标签页');
-                window.close();
-            }, 1000); // 延迟1000毫秒确保消息发送完成
-        }
+        // 将候选人信息存储到localStorage
+        const storageData = {
+            source: 'goodhr-plugin',
+            type: 'candidate-detail-response',
+            requestId: requestId,
+            data: candidateDetail,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('goodhr-candidate-detail', JSON.stringify(storageData));
+        // console.log('候选人信息已存储到localStorage, requestId:', requestId);
         
-        // 同时也使用postMessage作为备用方案
-        window.postMessage({ 
-            source: 'goodhr-plugin', 
-            type: 'candidate-detail-response', 
-            data: candidateDetail, 
-            requestId: requestId
-        }, '*');
+        // 清除点击时间戳
+        localStorage.removeItem('goodhr-candidate-click-timestamp');
         
-        // 如果使用postMessage，也设置关闭标签页
+        // 延迟关闭页面，确保数据存储完成
         setTimeout(() => {
-            console.log('候选人信息已通过postMessage发送，准备关闭标签页');
+            // console.log('准备关闭页面');
             window.close();
-        }, 1000); // 延迟1000毫秒确保消息发送完成
-    } 
-});
-
-// 监听BroadcastChannel消息
-try {
-    const channel = new BroadcastChannel('goodhr-plugin');
-    channel.onmessage = function(event) {
-        if (event.data && event.data.source === 'goodhr-plugin' && event.data.type === 'get-candidate-detail') {
-            console.log('通过BroadcastChannel收到获取候选人详细信息的请求');
-            
-            // 检查当前页面是否包含候选人信息 
-            if (!isCandidateDetailPage()) { 
-                console.log('当前页面不是候选人详情页，忽略请求'); 
-                return; 
-            } 
-            
-            // 获取候选人详细信息 
-            const candidateDetail = extractCandidateDetail(); 
-            
-            // 生成一个唯一的请求ID
-            const requestId = 'resp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-            
-            // 发送响应
-            channel.postMessage({
-                source: 'goodhr-plugin',
-                type: 'candidate-detail-response',
-                data: candidateDetail,
-                requestId: requestId
-            });
-            console.log('通过BroadcastChannel发送候选人信息响应成功');
-            
-            // 发送完成后关闭标签页
-            setTimeout(() => {
-                console.log('候选人信息已发送，准备关闭标签页');
-                window.close();
-            }, 1000); // 延迟1000毫秒确保消息发送完成
-        }
-    };
-} catch (e) {
-    console.log('BroadcastChannel不可用:', e);
+        }, 2000);
+        
+    } catch (error) {
+        console.error('处理候选人信息时出错:', error);
+        localStorage.removeItem('goodhr-candidate-click-timestamp'); // 出错时也要清除时间戳
+        window.close();
+    }
 }
 
 // 检查当前页面是否是候选人详情页
 function isCandidateDetailPage() {
     // 检查URL是否包含候选人详情页的特征
-    if (window.location.href.includes('/showresumedetail/') ) {
-        return true;
-    }
-    
-    return false;
+    return window.location.href.includes('/showresumedetail/');
 }
 
 // 提取候选人详细信息的函数
-function extractCandidateDetail() {
+async function extractCandidateDetail() {
     try {
         const candidate = {};
+        let nameElement = null;
+        let textElement = null;
+        let attempts = 0;
+        const maxAttempts = 20;
+        
+        // 循环获取候选人姓名和文本内容，最多尝试20次
+        while (attempts < maxAttempts) {
+            // 获取候选人姓名
+            nameElement = document.querySelector('[class*="name-box"]');
+            // 获取文本内容
+            textElement = document.querySelector('[class*="ant-tabs-tabpane ant-tabs-tabpane-active"]');
+            
+            // 检查两个值是否都非空
+            if (nameElement && nameElement.textContent.trim() && 
+                textElement && textElement.textContent.trim()) {
+                // 两个值都有效，退出循环
+                break;
+            }
+            
+            // 如果任一值为空，等待0.1秒后重试
+            // console.log(`尝试获取候选人信息 (${attempts + 1}/${maxAttempts})，等待0.1秒后重试...`);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
         
         // 获取候选人姓名
-        const nameElement = document.querySelector('[class*="name ellipsis"]') || 
-                           document.querySelector('[class*="name ellipsis"]') ||
-                           document.querySelector('h1') ||
-                           document.querySelector('[class*="title"]');
         candidate.name = nameElement ? nameElement.textContent.trim() : '';
-
-let textContent =  document.querySelector('[class*="ant-tabs-tabpane ant-tabs-tabpane-active"]') ? document.querySelector('[class*="ant-tabs-tabpane ant-tabs-tabpane-active"]').textContent.trim() : '';
+        // 获取文本内容
+        candidate.textContent = textElement ? textElement.textContent.trim() : '';
         
-        return {
-            name:candidate.name,
-            textContent:textContent,
-        };
+        // 如果尝试了最大次数仍未获取到有效信息，记录警告
+        if (attempts >= maxAttempts && (!candidate.name || !candidate.textContent)) {
+            console.warn(`尝试${maxAttempts}次后仍未获取到完整的候选人信息`);
+        }
+        
+        return candidate;
     } catch (error) {
         console.error('提取候选人详细信息时出错:', error);
         return { error: '提取候选人详细信息时出错', message: error.message };
     }
 }
 
-console.log('猎聘网拦截器注入器初始化完成');
+// console.log('猎聘网拦截器注入器初始化完成');

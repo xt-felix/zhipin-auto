@@ -375,7 +375,26 @@ async function executeScroll() {
                     return;
                 }
             } else {
-                // 如果没找到未处理的元素，向下滚动一段距离
+                // 如果没找到未处理的元素，检查是否需要翻页
+                if (ParserName === 'hliepin' && currentParser && typeof currentParser.shouldNavigateToNextPage === 'function') {
+                    const shouldNavigate = currentParser.shouldNavigateToNextPage(elements);
+                    
+                    if (shouldNavigate) {
+                        console.log('准备翻页');
+                        await currentParser.clickNextPageButton();
+                        // 翻页后等待页面加载
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                        // 重新加载解析器设置
+                        await currentParser.loadSettings();
+                        // 重置滚动位置
+                        window.scrollTo(0, 0);
+                        lastProcessedPosition = 0;
+                        executeScroll();
+                        return;
+                    }
+                }
+                
+                // 默认行为：向下滚动一段距离
                 window.scrollBy({
                     top: 200,
                     behavior: 'smooth'
@@ -571,7 +590,7 @@ async function processElement(element, doc) {
                             
                             let data2 = await currentParser.extractCandidates2(candidate);
                              simpleCandidateInfo = data2
-                             console.log("第二次组装信息:",simpleCandidateInfo);
+                            //  console.log("第二次组装信息:",simpleCandidateInfo);
 
                         } catch (error) {
                             console.error('第二次组装信息失败:', error);
