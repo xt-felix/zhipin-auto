@@ -102,6 +102,12 @@ async function initializeParser() {
             currentParser = new HLiepinParser();
             // showNotification('猎聘网初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
             createDraggablePrompt();
+        }else if (url.includes('employer.58.com')) {
+            ParserName = 'employer58'
+            const { Employer58Parser } = await import(extensionUrl + 'content_scripts/sites/employer58.js');
+            currentParser = new Employer58Parser();
+            // showNotification('58同城初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
+            createDraggablePrompt();
         }  else if (url.includes('zhaopin.com')) {
 
             ParserName = 'zhilian'
@@ -545,11 +551,10 @@ async function processElement(element, doc) {
 
                 if (currentParser.aiMode) {
                     // AI模式：基于简单信息决定是否查看详细信息
-
-
                     let { isok, msg } = await performAIClickDecision(simpleCandidateInfo);
                     AiMsg = msg
                     clickCandidate = isok;
+
                     if (clickCandidate) {
                     addHighlightReason(targetElement, '已打招呼(' + AiMsg + ')', '#4caf50');
 
@@ -567,7 +572,15 @@ async function processElement(element, doc) {
                     // 检查是否有打开的候选人页面
                     //关闭候选人弹框
 
-                    const clicked = await currentParser.clickCandidateDetail(element);
+                    let clicked = await currentParser.clickCandidateDetail(element);
+
+                    if (ParserName === 'employer58') {
+                        clicked = false
+                        shouldContact =true
+                                                await randomDelay(`查看候选人详细信息: ${candidate.name}`);
+
+                    }
+
                     if (clicked) {
                         shouldSkipDelay = true;
                         await randomDelay(`查看候选人详细信息: ${candidate.name}`);
@@ -585,9 +598,6 @@ async function processElement(element, doc) {
 
                         try {
                             //第二次组装信息
-                            
-
-                            
                             let data2 = await currentParser.extractCandidates2(candidate);
                              simpleCandidateInfo = data2
                             //  console.log("第二次组装信息:",simpleCandidateInfo);
@@ -622,6 +632,9 @@ async function processElement(element, doc) {
                         } else {
                             // 免费模式：使用关键词筛选
                             shouldContact = currentParser.filterCandidate(simpleCandidateInfo);
+                            if(ParserName === 'employer58'){
+                                shouldContact = true
+                            }
                         }
 
                         // 确保详情页完全关闭
@@ -639,6 +652,9 @@ async function processElement(element, doc) {
                         // console.log('使用关键词筛选候选人:', candidate.name);
 
                         shouldContact = currentParser.filterCandidate(simpleCandidateInfo);
+                         if(ParserName === 'employer58'){
+                                shouldContact = true
+                            }
                     }
                 }
 
@@ -1071,6 +1087,12 @@ function checkAIExpiration() {
 // 第一个AI决策点：决定是否查看候选人详细信息
 async function performAIClickDecision(simpleCandidateInfo) {
     try {
+
+//如果是58 就不查看详细信息
+                    if (ParserName === 'employer58') {
+                        return { isok: true, msg: "58无法筛选" };
+                    }
+
         // 检查AI是否过期
         const isExpired = await checkAIExpiration();
         if (isExpired) {

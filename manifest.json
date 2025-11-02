@@ -21,7 +21,8 @@
 		"*://*.zhaopin.com/*",
 		"*://*.liepin.com/*",
 		"*://*.siliconflow.cn/*",
-		"*://*.58it.cn/*"
+		"*://*.58it.cn/*",
+		"*://*.58.com/*"
 	],
 	"web_accessible_resources": [
 		{
@@ -59,6 +60,18 @@
 			"all_frames": true,
 			"match_about_blank": true
 		},
+
+		{
+			"matches": [
+				"*://employer.58.com/*"
+			],
+			"js": [
+				"content_scripts/sites/employer58_injector.js"
+			],
+			"run_at": "document_start",
+			"all_frames": true,
+			"match_about_blank": true
+		},
 		{
 			"matches": [
 				"*://*.zhipin.com/*"
@@ -78,7 +91,8 @@
 				"*://*.lagou.com/*",
 				"*://*.zhaopin.com/*",
 				"*://*.liepin.com/*",
-				"*://*.58it.cn/*"
+				"*://*.58it.cn/*",
+				"*://*.58.com/*"
 			],
 			"js": [
 				"config.js",

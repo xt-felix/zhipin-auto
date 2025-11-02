@@ -1,0 +1,21 @@
+/* 自定义字体文件 - 用于解决页面自定义字体乱码问题 */
+
+/* 示例：添加自定义字体 "mycustomfont039da3n75vc0ns" */
+@font-face {
+  font-family: 'mycustomfont039da3n75vc0ns';
+  src: url('data:font/woff2;base64,') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 在这里添加其他自定义字体的@font-face定义 */
+/* 
+@font-face {
+  font-family: 'another-custom-font';
+  src: url('data:font/woff2;base64,') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+*/
