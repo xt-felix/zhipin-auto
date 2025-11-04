@@ -372,9 +372,101 @@ async function loadState() {
 	}
 }
 
+// 显示设备指纹和状态
+async function displayFingerprint(deviceFingerprint) {
+	try {
+		// 获取设备指纹
+		const fingerprint = deviceFingerprint.getFingerprint();
+		if (!fingerprint) {
+			await deviceFingerprint.generateFingerprint();
+		}
+		
+		// 显示指纹
+		const fingerprintDisplay = document.getElementById('fingerprint-display');
+		const fingerprintStatus = document.getElementById('fingerprint-status');
+		
+		if (fingerprintDisplay) {
+			fingerprintDisplay.textContent = fingerprint || '未生成';
+		}
+		
+		// 检查设备状态
+		if (fingerprintStatus && fingerprint) {
+			fingerprintStatus.textContent = '状态检查中...';
+			
+			try {
+				// 检查设备是否已使用过AI功能
+				const trialStatus = await deviceFingerprint.checkAITrialStatus();
+				
+				if (trialStatus.used) {
+					if (trialStatus.hasAccess) {
+						fingerprintStatus.textContent = '此设备已使用AI功能，试用期有效';
+						fingerprintStatus.style.color = '#4CAF50'; // 绿色
+					} else {
+						fingerprintStatus.textContent = '此设备已使用AI功能，试用期已过';
+						fingerprintStatus.style.color = '#F44336'; // 红色
+					}
+				} else {
+					fingerprintStatus.textContent = '此设备未使用过AI功能';
+					fingerprintStatus.style.color = '#2196F3'; // 蓝色
+				}
+				
+				// 如果有关联的手机号，显示相关信息
+				if (trialStatus.associated_phone) {
+					fingerprintStatus.textContent += ` (关联手机号: ${trialStatus.associated_phone})`;
+				}
+			} catch (error) {
+				console.error('检查设备状态失败:', error);
+				fingerprintStatus.textContent = '状态检查失败: ' + error.message;
+				fingerprintStatus.style.color = '#FF9800'; // 橙色
+			}
+		}
+	} catch (error) {
+		console.error('显示设备指纹失败:', error);
+		const fingerprintDisplay = document.getElementById('fingerprint-display');
+		const fingerprintStatus = document.getElementById('fingerprint-status');
+		
+		if (fingerprintDisplay) {
+			fingerprintDisplay.textContent = '获取失败';
+		}
+		
+		if (fingerprintStatus) {
+			fingerprintStatus.textContent = '错误: ' + error.message;
+		}
+	}
+}
+
 // 将所有按钮事件监听器移到 DOMContentLoaded 事件处理函数中
 document.addEventListener('DOMContentLoaded', async () => {
 	try {
+		// 初始化设备指纹
+		const deviceFingerprint = new DeviceFingerprint();
+		await deviceFingerprint.getFingerprint();
+		
+		// 显示设备指纹
+		await displayFingerprint(deviceFingerprint);
+		
+		// 绑定刷新指纹按钮事件
+		const refreshFingerprintBtn = document.getElementById('refresh-fingerprint');
+		if (refreshFingerprintBtn) {
+			refreshFingerprintBtn.addEventListener('click', async () => {
+				try {
+					// 显示加载状态
+					document.getElementById('fingerprint-display').textContent = '刷新中...';
+					document.getElementById('fingerprint-status').textContent = '状态检查中...';
+					
+					// 重新生成指纹
+					await deviceFingerprint.generateFingerprint();
+					
+					// 更新显示
+					await displayFingerprint(deviceFingerprint);
+				} catch (error) {
+					console.error('刷新设备指纹失败:', error);
+					document.getElementById('fingerprint-display').textContent = '获取失败';
+					document.getElementById('fingerprint-status').textContent = '错误: ' + error.message;
+				}
+			});
+		}
+		
 		// 设置版本号 - 使用配置文件中的版本
 		const version = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.VERSION : chrome.runtime.getManifest().version;
 		document.getElementById('version').textContent = version;
@@ -394,8 +486,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 		// 新的初始化流程：获取服务器数据 → 缓存 → 检查到期日期 → 更新UI
 		await initializeFromServer();
 
-		// 加载AI配置并检查连接状态
-		await loadAIConfig();
+		// 确保AI配置已加载后再检查连接状态
+		if (serverData.ai_config && serverData.ai_config.token) {
+			await loadAIConfig();
+		} else {
+			// 如果没有AI配置，只检查连接状态而不加载配置
+			checkAIConnection();
+		}
 
 		// 绑定选项卡切换事件
 
@@ -868,20 +965,26 @@ async function startAutoScroll() {
 
 		// 根据当前模式决定发送的消息类型
 		if (currentTab === 'ai') {
+
+			
 			// AI模式 - 检查到期时间
 			if (!serverData.ai_expire_time) {
 				// 首次使用，先尝试从服务器获取，如果没有再设置新的
 				await initializeAIExpireTime();
-			} else if (checkAIExpiration()) {
+
+			} else if ( checkAIExpiration()) {
+				console.log(serverData.ai_expire_time);
+
 				// AI版本已过期
 				const message = 'AI版本试用期已到期，请前往官网联系作者续费。\n\n官网地址：http://goodhr.58it.cn';
+				
+				addLog('AI版本已过期，无法使用', 'error');
+				isRunning = false;
+				updateUI();
 				if (confirm(message + '\n\n点击确定前往官网')) {
 					// 用户点击确定，跳转到官网
 					chrome.tabs.create({ url: 'http://goodhr.58it.cn' });
 				}
-				addLog('AI版本已过期，无法使用', 'error');
-				isRunning = false;
-				updateUI();
 				return;
 			}
 
@@ -1150,7 +1253,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 
 	if (message.action === 'CHECK_AI_EXPIRATION') {
 		// 检查AI到期时间
-		const expired = checkAIExpiration();
+		const expired = await checkAIExpiration();
 		sendResponse({ expired });
 		return true;
 	}
@@ -1587,17 +1690,84 @@ function renderRankingList(data) {
 	`).join('');
 }
 
+// 检查设备AI试用期状态 - 独立方法
+async function checkDeviceAITrialStatus() {
+	try {
+		console.log('检查设备AI试用期状态...');
+		const deviceFingerprint = new DeviceFingerprint();
+		const trialStatus = await deviceFingerprint.checkAITrialStatus();
+		console.log('设备AI试用期状态:', trialStatus);
+		return trialStatus;
+	} catch (error) {
+		console.error('检查设备AI试用期状态失败:', error);
+		const defaultStatus = {
+			used: false,
+			hasAccess: false,
+			associatedPhone: null
+		};
+		console.log('返回默认状态:', defaultStatus);
+		return defaultStatus;
+	}
+}
+
 // AI到期时间管理函数
-function checkAIExpiration() {
+ function checkAIExpiration() {
 	if (!serverData.ai_expire_time) {
+		console.log('没有设置AI到期时间');
 		return false; // 没有设置到期时间，需要设置
 	}
 
 	const now = new Date();
 	// 将字符串日期转换为Date对象，格式：YYYY-MM-DD
 	const expireDate = new Date(serverData.ai_expire_time + 'T00:00:00');
+	const isExpired = now > expireDate;
 
-	return now > expireDate; // 返回true表示已过期
+	console.log('当前时间:', now);
+	console.log('到期时间:', expireDate);
+	console.log('到期时间字符串:', serverData.ai_expire_time);
+	console.log('是否已过期:', isExpired);
+	
+	// 特殊处理：如果到期时间是2099年或更晚，直接返回未过期
+	const expireYear = expireDate.getFullYear();
+	if (expireYear >= 2099) {
+		console.log('检测到远未来年份，强制返回未过期');
+		return false;
+	}
+	
+	return isExpired; // 返回true表示已过期
+}
+
+// 检查AI功能是否可用 - 综合判断到期时间和设备状态
+async function checkAIAvailability() {
+	// 首先检查是否已过期
+	const isExpired =  checkAIExpiration();
+	console.log('checkAIAvailability - isExpired:', isExpired);
+	
+	// 如果未过期，直接返回可用
+	if (!isExpired) {
+		console.log('AI功能未过期，返回可用');
+		return true;
+	}
+	
+	// 如果已过期，检查设备是否可以使用新的试用期
+	const trialStatus = await checkDeviceAITrialStatus();
+	console.log('checkAIAvailability - trialStatus:', trialStatus);
+	
+	// 如果设备未使用过AI功能，可以使用新的试用期
+	if (!trialStatus.used) {
+		console.log('设备未使用过AI功能，返回可用');
+		return true;
+	}
+	
+	// 如果设备已使用过但仍有访问权限，返回可用
+	if (trialStatus.hasAccess) {
+		console.log('设备已使用过但仍有访问权限，返回可用');
+		return true;
+	}
+	
+	// 其他情况返回不可用
+	console.log('AI功能不可用');
+	return false;
 }
 
 // 初始化AI到期时间 - 永远以服务器为准
@@ -1615,10 +1785,25 @@ async function initializeAIExpireTime() {
 			}
 		}
 
-		// 第二步：服务器没有到期时间，设置新的7天试用期并保存到服务器
+		// 第二步：服务器没有到期时间，检查设备是否已经使用过AI功能
+		const trialStatus = await checkDeviceAITrialStatus();
+		
+		if (trialStatus.used && !trialStatus.hasAccess) {
+			// 设备已经使用过AI功能，但试用期已过
+			addLog('此设备已使用过AI功能，试用期已过，请购买正式版', 'warning');
+			return;
+		}
+		
+		// 第三步：检查设备是否已绑定其他手机号
+		if (trialStatus.used && trialStatus.associatedPhone && trialStatus.associatedPhone !== boundPhone) {
+			addLog(`此设备已绑定手机号 ${trialStatus.associatedPhone}，无法为新手机号设置试用期`, 'warning');
+			return;
+		}
+		
+		// 第四步：设置新的3天试用期并保存到服务器
 		await setAIExpireTime();
 
-		// 第三步：重复第一步，从服务器获取刚保存的到期时间
+		// 第五步：重复第一步，从服务器获取刚保存的到期时间
 		if (boundPhone) {
 			await syncSettingsFromServer();
 			if (serverData.ai_expire_time) {
@@ -1679,11 +1864,43 @@ async function setAIExpireTime() {
 	// 格式化为 YYYY-MM-DD 字符串格式
 	serverData.ai_expire_time = expireDate.toISOString().split('T')[0];
 
-	// 如果绑定了手机号，保存到服务器
+	// 记录设备指纹
+	const deviceFingerprint = new DeviceFingerprint();
+	const fingerprint = await deviceFingerprint.getFingerprint();
+	
+	// 保存设备指纹到服务器
 	if (boundPhone) {
 		try {
+			// 先记录设备指纹
+			const response = await fetch(`${API_BASE}/checkaitrial.php`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					phone: boundPhone,
+					fingerprint: fingerprint,
+					action: 'record' // 记录设备指纹
+				})
+			});
+
+			const result = await response.json();
+			if (result.success) {
+				addLog('设备指纹已记录到服务器', 'success');
+			} else {
+				addLog('记录设备指纹失败: ' + result.message, 'error');
+				// 如果是手机号已绑定其他设备的错误，抛出异常停止执行
+				if (result.message && result.message.includes('此手机号已绑定其他设备')) {
+					throw new Error(result.message);
+				}
+			}
+			
+			// 然后更新服务器数据
 			await updateServerData();
 			addLog('赠送AI版本3天试用期', 'success');
+			
+			// 更新设备指纹显示
+			await displayFingerprint(deviceFingerprint);
 		} catch (error) {
 			addLog('保存AI到期时间到服务器失败: ' + error.message, 'error');
 			throw error; // 重新抛出错误，让调用者知道保存失败
@@ -1724,12 +1941,29 @@ async function bindPhone(phone) {
 			throw new Error('请输入正确的手机号');
 		}
 
+		// 先检查设备是否已绑定其他手机号
+		const deviceFingerprint = new DeviceFingerprint();
+		const checkResult = await deviceFingerprint.checkDeviceUsage(phone);
+		
+		// 如果设备已使用过且绑定了其他手机号，则不允许绑定新手机号
+		if (checkResult.device_used && checkResult.associated_phone && checkResult.associated_phone !== phone) {
+			throw new Error(`此设备已绑定手机号 ${checkResult.associated_phone}，无法绑定新手机号`);
+		}
+		
+		// 检查手机号是否已绑定其他设备
+		if (checkResult.error && checkResult.error.includes('此手机号已绑定其他设备')) {
+			throw new Error(checkResult.error);
+		}
+
 		// 先保存旧的手机号
 		const oldPhone = boundPhone;
 		boundPhone = phone;
 
 		// 保存新手机号到存储
 		await chrome.storage.local.set({ 'hr_assistant_phone': phone });
+
+		// 保存设备指纹与手机号的关联
+		await deviceFingerprint.checkDeviceUsage(phone);
 
 		const hasServerData = await syncSettingsFromServer();
 		if (hasServerData) {
@@ -1742,6 +1976,9 @@ async function bindPhone(phone) {
 		if (!serverData.ai_expire_time) {
 			await initializeAIExpireTime();
 		}
+		
+		// 更新设备指纹显示
+		await displayFingerprint(deviceFingerprint);
 	} catch (error) {
 		addLog(error.message, 'error');
 		throw error;
@@ -1762,8 +1999,13 @@ async function syncSettingsFromServer() {
 		if (data && Object.keys(data).length > 0) {
 			// 使用服务器数据覆盖本地缓存
 			serverData = { ...serverData, ...data };
+			
+			// 记录AI配置加载情况
+			if (data.ai_config) {
+				console.log('已从服务器加载AI配置:', data.ai_config);
+			}
 
-			// 保存到本地存储
+			// 保存到本地存储，包括AI配置
 			await chrome.storage.local.set({
 				'hr_assistant_settings': {
 					positions: serverData.positions,
@@ -1774,6 +2016,7 @@ async function syncSettingsFromServer() {
 					scrollDelayMin: serverData.scrollDelayMin,
 					scrollDelayMax: serverData.scrollDelayMax
 				},
+				'ai_config': serverData.ai_config,
 				'ai_expire_time': serverData.ai_expire_time
 			});
 
@@ -1941,9 +2184,20 @@ async function selectPosition(positionName) {
 // 加载AI配置
 async function loadAIConfig() {
 	try {
+		// 如果serverData中已有AI配置，直接使用
+		if (serverData.ai_config && serverData.ai_config.token) {
+			console.log('使用已加载的AI配置:', serverData.ai_config);
+			updateAIConfigUI();
+			// 检查AI连接状态
+			checkAIConnection();
+			return;
+		}
+		
+		// 否则从本地存储加载
 		const result = await chrome.storage.local.get('ai_config');
 		if (result.ai_config) {
 			serverData.ai_config = { ...serverData.ai_config, ...result.ai_config };
+			console.log('从本地存储加载AI配置:', serverData.ai_config);
 			updateAIConfigUI();
 		}
 
@@ -2082,6 +2336,18 @@ async function checkAIConnection() {
 		return;
 	}
 
+	// 检查AI功能是否可用（包括到期时间和设备状态）
+	console.log('检查AI功能是否可用...');
+	const isAIAvailable = await checkAIAvailability();
+	console.log('AI功能是否可用:', isAIAvailable);
+	if (!isAIAvailable) {
+		statusIndicator.className = 'ai-status-indicator disconnected';
+		statusText.textContent = 'AI功能已过期';
+		hideBalanceDisplay(); // 过期时隐藏余额显示
+		console.log('AI功能不可用，显示"AI功能已过期"');
+		return;
+	}
+
 	// 如果有轨迹流动Token，尝试连接测试
 	if (serverData.ai_config.token) {
 		try {
@@ -2114,6 +2380,7 @@ async function checkAIConnection() {
 		statusIndicator.className = 'ai-status-indicator disconnected';
 		statusText.textContent = '缺少Token(前往官网里查看配置教程(goodhr.58it.cn))';
 		hideBalanceDisplay(); // 没有认证信息时隐藏余额显示
+		console.warn('AI配置缺少Token:', serverData.ai_config);
 	}
 }
 
@@ -2520,6 +2787,7 @@ async function loadSettingsFromLocal() {
 
 		if (result.ai_config) {
 			serverData.ai_config = { ...serverData.ai_config, ...result.ai_config };
+			console.log('已从本地存储加载AI配置:', serverData.ai_config);
 		}
 
 	} catch (error) {
@@ -2533,6 +2801,16 @@ async function loadSettingsFromLocal() {
 async function checkAndSetAIExpireTime() {
 	// 检查服务器返回的数据是否有到期日期
 	if (!serverData.ai_expire_time) {
+		// 检查设备指纹是否已经使用过AI功能
+		const deviceFingerprint = new DeviceFingerprint();
+		const trialStatus = await deviceFingerprint.checkAITrialStatus();
+		
+		if (trialStatus.used && !trialStatus.hasAccess) {
+			// 设备已经使用过AI功能，但试用期已过
+			addLog('此设备已使用过AI功能，试用期已过，请购买正式版', 'warning');
+			return;
+		}
+		
 		// 如果没有到期日期，设置新的到期日期
 		const expireDate = new Date();
 		expireDate.setDate(expireDate.getDate() + 3);

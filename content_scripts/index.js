@@ -578,7 +578,6 @@ async function processElement(element, doc) {
                         clicked = false
                         shouldContact =true
                                                 await randomDelay(`查看候选人详细信息: ${candidate.name}`);
-
                     }
 
                     if (clicked) {
@@ -599,9 +598,10 @@ async function processElement(element, doc) {
                         try {
                             //第二次组装信息
                             let data2 = await currentParser.extractCandidates2(candidate);
-                             simpleCandidateInfo = data2
-                            //  console.log("第二次组装信息:",simpleCandidateInfo);
+                            if(data2){
+                                simpleCandidateInfo = data2
 
+                            }
                         } catch (error) {
                             console.error('第二次组装信息失败:', error);
                         }

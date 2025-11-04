@@ -884,6 +884,18 @@
                 </div>
 
                 <div class="filter-group">
+                    <label class="title">设备指纹</label>
+                    <div style="margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                            <span style="font-size: 12px; color: #666; margin-right: 8px;">当前设备指纹:</span>
+                            <button id="refresh-fingerprint" style="font-size: 11px; background: #1a73e8; color: white; border: none; border-radius: 4px; padding: 2px 6px; cursor: pointer;">刷新</button>
+                        </div>
+                        <div id="fingerprint-display" style="font-family: monospace; font-size: 11px; background: #f5f5f5; padding: 5px; border-radius: 4px; word-break: break-all; color: #333; min-height: 20px;">加载中...</div>
+                        <div id="fingerprint-status" style="font-size: 11px; color: #666; margin-top: 5px;">状态检查中...</div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
                     <label class="title">使用说明</label>
                     <label class="checkbox-wrapper">
                         <span class="checkbox-label">
@@ -1004,6 +1016,7 @@
 
     <div style="height: 160px;"></div>
 
+    <script src="../utils/fingerprint-device.js"></script>
     <script src="../config.js"></script>
     <script src="index.js"></script>
 </body>

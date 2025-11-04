@@ -75,7 +75,7 @@ class LiepinParser extends BaseParser {
 
         return data2;
     }
-    asyncextractCandidates2(data) {
+    async extractCandidates2(data) {
           // 使用通用查找函数查找元素，尝试多种方法（同步模式）
         const result = this.findElementsByMultipleMethods(".content--dw5Ml", {
             includeHidden: false,  // 不包含隐藏元素
