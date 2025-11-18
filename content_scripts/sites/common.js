@@ -39,6 +39,13 @@ class BaseParser {
 
     setFilterSettings(settings) {
         this.filterSettings = settings;
+        
+        // 如果设置中包含点击频率，更新点击配置
+        if (settings.clickFrequency !== undefined) {
+            this.setClickCandidateConfig({
+                frequency: settings.clickFrequency
+            });
+        }
     }
 
     // 基础的筛选方法

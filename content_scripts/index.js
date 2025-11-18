@@ -883,8 +883,15 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                     currentParser.setFilterSettings({
                         ...message.data,
                         scrollDelayMin: message.data.scrollDelayMin || 3,
-                        scrollDelayMax: message.data.scrollDelayMax || 5
+                        scrollDelayMax: message.data.scrollDelayMax || 5,
+                        clickFrequency: message.data.clickFrequency || 7
                     });
+                    
+                    // 更新提示音设置
+                    if (message.data.enableSound !== undefined) {
+                        enableSound = message.data.enableSound;
+                    }
+                    
                     sendResponse({ status: 'ok' });
                 } else {
                     console.error('解析器未初始化');

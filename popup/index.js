@@ -515,6 +515,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		// 绑定AI配置相关事件
 		document.getElementById('ai-config-btn').addEventListener('click', () => {
 			showAIConfigModal();
+
 		});
 
 		document.getElementById('ai-config-close').addEventListener('click', () => {
@@ -603,6 +604,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		aiBindPhoneBtn.addEventListener('click', async () => {
 			try {
 				await bindPhone(aiPhoneInput.value.trim());
+				saveAIConfig();
 			} catch (error) {
 				console.error('绑定手机号失败:', error);
 			}
@@ -662,6 +664,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 		const settings = await getSettings();
 		const matchLimitInput = document.getElementById('match-limit');
 		const enableSoundCheckbox = document.getElementById('enable-sound');
+				// 加载延迟设置
+		const delayMinInput = document.getElementById('delay-min');
+		const delayMaxInput = document.getElementById('delay-max');
 
 		// 监听年龄选择变更
 		document.getElementById('ageMin')?.addEventListener('change', saveSettings);
@@ -744,6 +749,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 			matchLimit = settings.matchLimit;
 			matchLimitInput.value = matchLimit;
 		}
+
+
+
+		if (settings.scrollDelayMin !== undefined) {
+			scrollDelayMin = settings.scrollDelayMin;
+			delayMinInput.value = scrollDelayMin;
+		} 
+
+		if (settings.scrollDelayMax !== undefined) {
+			scrollDelayMax = settings.scrollDelayMax;
+			delayMaxInput.value = scrollDelayMax;
+		} 
+
 
 		if (settings.enableSound !== undefined) {
 			enableSound = settings.enableSound;
@@ -841,23 +859,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 		// 加载完成提示
 		addLog('设置加载完成', 'success');
 
-		// 加载延迟设置
-		const delayMinInput = document.getElementById('delay-min');
-		const delayMaxInput = document.getElementById('delay-max');
-
-		if (settings.scrollDelayMin !== undefined) {
-			scrollDelayMin = settings.scrollDelayMin;
-			delayMinInput.value = scrollDelayMin;
-		} else {
-			delayMinInput.value = 3; // 设置默认值
-		}
-
-		if (settings.scrollDelayMax !== undefined) {
-			scrollDelayMax = settings.scrollDelayMax;
-			delayMaxInput.value = scrollDelayMax;
-		} else {
-			delayMaxInput.value = 5; // 设置默认值
-		}
 
 		// 监听延迟输入框变化
 		delayMinInput.addEventListener('change', saveSettings);
@@ -2378,7 +2379,7 @@ async function checkAIConnection() {
 	} else {
 		// 缺少认证信息
 		statusIndicator.className = 'ai-status-indicator disconnected';
-		statusText.textContent = '缺少Token(前往官网里查看配置教程(goodhr.58it.cn))';
+		statusText.innerHTML =  '<span >* 获取秘钥请访问：<a href="https://goodhr.58it.cn/describe.html" target="_blank">AI配置教程</a></span>';
 		hideBalanceDisplay(); // 没有认证信息时隐藏余额显示
 		console.warn('AI配置缺少Token:', serverData.ai_config);
 	}
