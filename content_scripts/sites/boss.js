@@ -395,7 +395,7 @@ class BossParser extends BaseParser {
             // 递归深度限制，避免无限循环
             if (maxRetries <= 0) {
                 console.warn('关闭详情已达到最大重试次数');
-                alert("Goodhr提醒您: 尝试三次关闭候选人弹框都失败了，请暂停使用并联系作者处理");
+                // alert("Goodhr提醒您: 尝试三次关闭候选人弹框都失败了，请暂停使用并联系作者处理");
                 return false;
             }
             

@@ -37,7 +37,13 @@ let serverData = {
 	enableSound: true,
 	scrollDelayMin: 3,
 	scrollDelayMax: 5,
-	clickFrequency: 7
+	clickFrequency: 7,
+	communicationConfig: {
+		enabled: false,
+		phone: false,
+		wechat: false,
+		resume: false
+	}
 };
 
 // ========== 运行时状态变量 ==========
@@ -112,9 +118,7 @@ async function saveSettings() {
 		if (!serverData.communicationConfig) {
 			serverData.communicationConfig = {};
 		}
-		serverData.communicationConfig.collectPhone = document.getElementById('collect-phone')?.checked || true;
-		serverData.communicationConfig.collectWechat = document.getElementById('collect-wechat')?.checked || true;
-		serverData.communicationConfig.collectResume = document.getElementById('collect-resume')?.checked || true;
+
 
 		// 保存运行模式配置
 		if (!serverData.runModeConfig) {
@@ -122,6 +126,13 @@ async function saveSettings() {
 		}
 		serverData.runModeConfig.greetingEnabled = document.getElementById('greeting-checkbox')?.checked !== false; // 默认为true
 		serverData.runModeConfig.communicationEnabled = document.getElementById('communication-checkbox')?.checked !== false; // 默认为true
+
+		// 索要手机号
+		serverData.communicationConfig.collectPhone = document.getElementById('collect-phone')?.checked || false;
+		// 索要微信号
+		serverData.communicationConfig.collectWechat = document.getElementById('collect-wechat')?.checked || false;
+		// 索要简历
+		serverData.communicationConfig.collectResume = document.getElementById('collect-resume')?.checked || false;
 
 		// 保存到本地存储
 		await chrome.storage.local.set({
@@ -689,6 +700,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 		const positionInput = document.getElementById('position-input');
 		const addPositionBtn = document.getElementById('add-position');
 
+
+		//索要绑定点击事件
+		const collectPhoneCheckbox = document.getElementById('collect-phone');
+		const collectWechatCheckbox = document.getElementById('collect-wechat');
+		const collectResumeCheckbox = document.getElementById('collect-resume');
+
+		// 监听索要绑定点击事件
+		collectPhoneCheckbox.addEventListener('change', saveSettings);
+		collectWechatCheckbox.addEventListener('change', saveSettings);
+		collectResumeCheckbox.addEventListener('change', saveSettings);
+
 		if (!keywordInput || !addKeywordBtn || !addExcludeKeywordBtn || !positionInput || !addPositionBtn) {
 			console.error('找不到关键词或岗位相关元素');
 			addLog('⚠️ 系统错误：界面初始化失败', 'error');
@@ -1009,7 +1031,9 @@ async function startAutoScroll() {
 							scrollDelayMin: parseInt(delayMinInput.value) || 3,
 							scrollDelayMax: parseInt(delayMaxInput.value) || 5,
 							clickFrequency: parseInt(clickFrequencyInput.value) || 7,
-							enableSound: enableSoundCheckbox.checked
+							enableSound: enableSoundCheckbox.checked,
+
+							communicationConfig: serverData.communicationConfig
 						}
 					},
 						response => {
@@ -1055,13 +1079,16 @@ async function startAutoScroll() {
 							scrollDelayMin: parseInt(delayMinInput.value) || 3,
 							scrollDelayMax: parseInt(delayMaxInput.value) || 5,
 							clickFrequency: parseInt(clickFrequencyInput.value) || 7,
+							enableSound: enableSoundCheckbox.checked,
+
+							communicationConfig: serverData.communicationConfig
 						}
 					},
 						response => {
 							if (chrome.runtime.lastError) {
 								console.error('发送消息失败:', chrome.runtime.lastError);
 								addLog('⚠️ 无法连接到页面，请刷新页面', 'error');
-								isRunning = false;
+								// isRunning = false;
 								updateUI();
 								return;
 							}
@@ -2911,6 +2938,33 @@ function updateOtherSettingsUI() {
 	const enableSoundCheckbox = document.getElementById('enable-sound');
 	if (enableSoundCheckbox && serverData.enableSound !== undefined) {
 		enableSoundCheckbox.checked = serverData.enableSound;
+	}
+
+	// 更新索要绑定设置
+	const collectPhoneCheckbox = document.getElementById('collect-phone');
+	if(!serverData.communicationConfig.collectPhone){
+		serverData.communicationConfig.collectPhone = false;
+	}
+	if (collectPhoneCheckbox && serverData.communicationConfig && serverData.communicationConfig.collectPhone !== undefined) {
+		collectPhoneCheckbox.checked = serverData.communicationConfig.collectPhone;
+	}
+
+	if(!serverData.communicationConfig.collectWechat){
+		serverData.communicationConfig.collectWechat = false;
+	}
+	const collectWechatCheckbox = document.getElementById('collect-wechat');
+	if (collectWechatCheckbox && serverData.communicationConfig && serverData.communicationConfig.collectWechat !== undefined) {
+		collectWechatCheckbox.checked = serverData.communicationConfig.collectWechat;
+	}
+
+	if(!serverData.communicationConfig.collectResume){
+		serverData.communicationConfig.collectResume = false;
+	}
+	const collectResumeCheckbox = document.getElementById('collect-resume');
+	if (collectResumeCheckbox && serverData.communicationConfig && serverData.communicationConfig.collectResume !== undefined) {
+		collectResumeCheckbox.checked = serverData.communicationConfig.collectResume;
+	}else{
+		collectResumeCheckbox.checked = false;
 	}
 
 	// 更新延迟设置

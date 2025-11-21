@@ -577,7 +577,7 @@ async function processElement(element, doc) {
                     if (ParserName === 'employer58') {
                         clicked = false
                         shouldContact =true
-                                                await randomDelay(`查看候选人详细信息: ${candidate.name}`);
+                        await randomDelay(`查看候选人详细信息: ${candidate.name}`);
                     }
 
                     if (clicked) {
@@ -671,6 +671,18 @@ async function processElement(element, doc) {
 
                     const clicked = await currentParser.clickMatchedItem(element);
                     if (clicked) {
+                        try {
+                         if (currentParser.filterSettings.communicationConfig.collectPhone||currentParser.filterSettings.communicationConfig.collectWechat||currentParser.filterSettings.communicationConfig.collectResume) {
+                             await randomDelay("索要信息");
+                            const phone = await currentParser.collectPhoneWechatResume(currentParser.filterSettings.communicationConfig.collectPhone, currentParser.filterSettings.communicationConfig.collectWechat, currentParser.filterSettings.communicationConfig.collectResume, candidate,element);
+                        }
+                        } catch (error) {
+                            console.error('索要配置异常:', error,currentParser.filterSettings.communicationConfig);
+                            return null;
+                        }
+                        
+                      
+
                         matchCount++;
                         console.log(`打招呼成功，当前计数: ${matchCount}/${matchLimit}`);
                         //播放提示音
@@ -742,7 +754,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     try {
         switch (message.action) {
             case 'START_SCROLL':
-                // console.log('收到开始滚动消息:', message);
 
                 // 检查解析器是否已初始化
                 if (!currentParser) {
@@ -767,7 +778,10 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                         isAndMode: message.data.isAndMode,
                         matchLimit: message.data.matchLimit,
                         scrollDelayMin: message.data.scrollDelayMin,
-                        scrollDelayMax: message.data.scrollDelayMax
+                        scrollDelayMax: message.data.scrollDelayMax,
+                        enableSound: message.data.enableSound,
+                        communicationEnabled: message.data.communicationEnabled,
+                        communicationConfig: message.data.communicationConfig
                     };
                 }
 
@@ -802,7 +816,10 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                     aiConfig: message.data.aiConfig,
                     matchLimit: message.data.matchLimit,
                     scrollDelayMin: message.data.scrollDelayMin,
-                    scrollDelayMax: message.data.scrollDelayMax
+                    scrollDelayMax: message.data.scrollDelayMax,
+                    enableSound: message.data.enableSound,
+                    communicationEnabled: message.data.communicationEnabled,
+                    communicationConfig: message.data.communicationConfig
                 };
 
                 // 直接使用原有的滚动逻辑
@@ -810,22 +827,23 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                 sendResponse({ status: 'success' });
                                 break;
             case 'SHOW_ADS':
+
+            console.log('收到显示广告消息:', message);
+            
                 // 检查广告配置是否已加载
                 if (adConfig) {
                     // 检查AI是否过期
                     chrome.storage.local.get(['ai_expire_time'], function(result) {
-                        let isAIExpired = false;
+                        let isAIExpired = true;
                         if (result.ai_expire_time) {
 
                             const now = new Date();
                             let expireDate = null;
                             try {
                                  expireDate = new Date(result.ai_expire_time + 'T00:00:00');
-                                                             isAIExpired = now > expireDate;
-
-                            //         console.log('AI到期时间:', expireDate);
-                            // console.log('当前时间:', now);
-                            // console.log('是否过期:', isAIExpired);
+                                if (now > expireDate) {
+                                    isAIExpired = true;
+                                }
                             } catch (error) {
                                 console.error('解析AI到期时间失败:', error);
                                 sendResponse({ status: 'error', message: '解析AI到期时间失败' });
@@ -883,15 +901,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                     currentParser.setFilterSettings({
                         ...message.data,
                         scrollDelayMin: message.data.scrollDelayMin || 3,
-                        scrollDelayMax: message.data.scrollDelayMax || 5,
-                        clickFrequency: message.data.clickFrequency || 7
+                        scrollDelayMax: message.data.scrollDelayMax || 5
                     });
-                    
-                    // 更新提示音设置
-                    if (message.data.enableSound !== undefined) {
-                        enableSound = message.data.enableSound;
-                    }
-                    
                     sendResponse({ status: 'ok' });
                 } else {
                     console.error('解析器未初始化');
