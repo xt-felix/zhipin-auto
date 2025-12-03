@@ -285,6 +285,9 @@ async function executeScroll() {
         return;
     }
 
+    
+
+
     try {
 
 
@@ -474,6 +477,11 @@ function addHighlightReason(element, reason, color) {
 async function processElement(element, doc) {
 
 
+    //处理消息提示
+        console.log('开始处理消息提示');
+
+    await currentParser.checkMessageTip(element,currentParser.filterSettings.communicationConfig.collectPhone||false,currentParser.filterSettings.communicationConfig.collectWechat||false,currentParser.filterSettings.communicationConfig.collectResume||false);
+
     try {
         // 发送计数请求到服务器（不等待响应）
         const apiBase = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'https://goodhr.58it.cn';
@@ -631,6 +639,7 @@ async function processElement(element, doc) {
 
                         } else {
                             // 免费模式：使用关键词筛选
+
                             shouldContact = currentParser.filterCandidate(simpleCandidateInfo);
                             if(ParserName === 'employer58'){
                                 shouldContact = true
@@ -652,11 +661,17 @@ async function processElement(element, doc) {
                         // console.log('使用关键词筛选候选人:', candidate.name);
 
                         shouldContact = currentParser.filterCandidate(simpleCandidateInfo);
+
+                        
                          if(ParserName === 'employer58'){
                                 shouldContact = true
                             }
                     }
                 }
+
+
+
+                
 
                 if (shouldContact) {
                     // 再次检查是否已达到匹配限制
@@ -673,7 +688,6 @@ async function processElement(element, doc) {
                     if (clicked) {
                         try {
                          if (currentParser.filterSettings.communicationConfig.collectPhone||currentParser.filterSettings.communicationConfig.collectWechat||currentParser.filterSettings.communicationConfig.collectResume) {
-                             await randomDelay("索要信息");
                             const phone = await currentParser.collectPhoneWechatResume(currentParser.filterSettings.communicationConfig.collectPhone, currentParser.filterSettings.communicationConfig.collectWechat, currentParser.filterSettings.communicationConfig.collectResume, candidate,element);
                         }
                         } catch (error) {
@@ -1706,7 +1720,7 @@ async function loadAdConfig() {
     try {
         // 从服务器加载广告配置，与popup中的实现保持一致
         const API_BASE = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'https://goodhr.58it.cn';
-        const response = await fetch(`${API_BASE}/ads.json?t=${Date.now()}`);
+        const response = await fetch(`${API_BASE}/ads.json`);
         if (response.ok) {
             adConfig = await response.json();
             if (adConfig.success) {
@@ -1826,7 +1840,6 @@ function createDraggableAdElement(adData) {
     content += `</div>`;
     content += `<div class="ad-content" style="padding: 0px 8px;  overflow-y: auto;cursor: pointer; ">${adData.content}</div>`;
     
-    console.log(adData);
     
     // 添加底部文字（如果有）
     if (adData.bottom_content) {

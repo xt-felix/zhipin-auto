@@ -128,11 +128,11 @@ async function saveSettings() {
 		serverData.runModeConfig.communicationEnabled = document.getElementById('communication-checkbox')?.checked !== false; // 默认为true
 
 		// 索要手机号
-		serverData.communicationConfig.collectPhone = document.getElementById('collect-phone')?.checked || false;
+		serverData.communicationConfig.collectPhone = document.querySelector('.collect-phone')?.checked || false;
 		// 索要微信号
-		serverData.communicationConfig.collectWechat = document.getElementById('collect-wechat')?.checked || false;
+		serverData.communicationConfig.collectWechat = document.querySelector('.collect-wechat')?.checked || false;
 		// 索要简历
-		serverData.communicationConfig.collectResume = document.getElementById('collect-resume')?.checked || false;
+		serverData.communicationConfig.collectResume = document.querySelector('.collect-resume')?.checked || false;
 
 		// 保存到本地存储
 		await chrome.storage.local.set({
@@ -702,14 +702,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 		//索要绑定点击事件
-		const collectPhoneCheckbox = document.getElementById('collect-phone');
-		const collectWechatCheckbox = document.getElementById('collect-wechat');
-		const collectResumeCheckbox = document.getElementById('collect-resume');
+		const collectPhoneCheckboxes = document.querySelectorAll('.collect-phone');
+		const collectWechatCheckboxes = document.querySelectorAll('.collect-wechat');
+		const collectResumeCheckboxes = document.querySelectorAll('.collect-resume');
 
 		// 监听索要绑定点击事件
-		collectPhoneCheckbox.addEventListener('change', saveSettings);
-		collectWechatCheckbox.addEventListener('change', saveSettings);
-		collectResumeCheckbox.addEventListener('change', saveSettings);
+		collectPhoneCheckboxes.forEach(checkbox => {
+			checkbox.addEventListener('change', (e) => {
+				// 同步所有相同类名的复选框状态
+				document.querySelectorAll('.collect-phone').forEach(cb => {
+					cb.checked = e.target.checked;
+				});
+				saveSettings();
+			});
+		});
+		collectWechatCheckboxes.forEach(checkbox => {
+			checkbox.addEventListener('change', (e) => {
+				// 同步所有相同类名的复选框状态
+				document.querySelectorAll('.collect-wechat').forEach(cb => {
+					cb.checked = e.target.checked;
+				});
+				saveSettings();
+			});
+		});
+		collectResumeCheckboxes.forEach(checkbox => {
+			checkbox.addEventListener('change', (e) => {
+				// 同步所有相同类名的复选框状态
+				document.querySelectorAll('.collect-resume').forEach(cb => {
+					cb.checked = e.target.checked;
+				});
+				saveSettings();
+			});
+		});
 
 		if (!keywordInput || !addKeywordBtn || !addExcludeKeywordBtn || !positionInput || !addPositionBtn) {
 			console.error('找不到关键词或岗位相关元素');
@@ -2581,7 +2605,7 @@ async function sendDirectAIRequest(prompt) {
 // 加载广告配置
 async function loadAdConfig() {
 	try {
-		const response = await fetch(`${API_BASE}/ads.json?t=${Date.now()}`);
+		const response = await fetch(`${API_BASE}/ads.json`);
 		if (response.ok) {
 			adConfig = await response.json();
 			if (adConfig.success) {
@@ -2941,31 +2965,37 @@ function updateOtherSettingsUI() {
 	}
 
 	// 更新索要绑定设置
-	const collectPhoneCheckbox = document.getElementById('collect-phone');
+	const collectPhoneCheckboxes = document.querySelectorAll('.collect-phone');
 	if(!serverData.communicationConfig.collectPhone){
 		serverData.communicationConfig.collectPhone = false;
 	}
-	if (collectPhoneCheckbox && serverData.communicationConfig && serverData.communicationConfig.collectPhone !== undefined) {
-		collectPhoneCheckbox.checked = serverData.communicationConfig.collectPhone;
-	}
+	collectPhoneCheckboxes.forEach(checkbox => {
+		if (checkbox && serverData.communicationConfig && serverData.communicationConfig.collectPhone !== undefined) {
+			checkbox.checked = serverData.communicationConfig.collectPhone;
+		}
+	});
 
 	if(!serverData.communicationConfig.collectWechat){
 		serverData.communicationConfig.collectWechat = false;
 	}
-	const collectWechatCheckbox = document.getElementById('collect-wechat');
-	if (collectWechatCheckbox && serverData.communicationConfig && serverData.communicationConfig.collectWechat !== undefined) {
-		collectWechatCheckbox.checked = serverData.communicationConfig.collectWechat;
-	}
+	const collectWechatCheckboxes = document.querySelectorAll('.collect-wechat');
+	collectWechatCheckboxes.forEach(checkbox => {
+		if (checkbox && serverData.communicationConfig && serverData.communicationConfig.collectWechat !== undefined) {
+			checkbox.checked = serverData.communicationConfig.collectWechat;
+		}
+	});
 
 	if(!serverData.communicationConfig.collectResume){
 		serverData.communicationConfig.collectResume = false;
 	}
-	const collectResumeCheckbox = document.getElementById('collect-resume');
-	if (collectResumeCheckbox && serverData.communicationConfig && serverData.communicationConfig.collectResume !== undefined) {
-		collectResumeCheckbox.checked = serverData.communicationConfig.collectResume;
-	}else{
-		collectResumeCheckbox.checked = false;
-	}
+	const collectResumeCheckboxes = document.querySelectorAll('.collect-resume');
+	collectResumeCheckboxes.forEach(checkbox => {
+		if (checkbox && serverData.communicationConfig && serverData.communicationConfig.collectResume !== undefined) {
+			checkbox.checked = serverData.communicationConfig.collectResume;
+		} else {
+			checkbox.checked = false;
+		}
+	});
 
 	// 更新延迟设置
 	const delayMinInput = document.getElementById('delay-min');

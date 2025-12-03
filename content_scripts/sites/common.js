@@ -39,13 +39,6 @@ class BaseParser {
 
     setFilterSettings(settings) {
         this.filterSettings = settings;
-        
-        // 如果设置中包含点击频率，更新点击配置
-        if (settings.clickFrequency !== undefined) {
-            this.setClickCandidateConfig({
-                frequency: settings.clickFrequency
-            });
-        }
     }
 
     // 基础的筛选方法
@@ -69,7 +62,7 @@ class BaseParser {
             this.filterSettings.excludeKeywords.some(keyword =>
                 allText.includes(keyword.toLowerCase())
             )) {
-            //console.log('匹配到排除关键词');
+            console.log('匹配到排除关键词');
             return false;
         }
 

@@ -18,7 +18,9 @@ class HLiepinParser extends BaseParser {
             // 分页相关选择器
             nextPageButton: 'ant-pagination-next',
             paginationContainer: 'ant-pagination',
-            disabledClass: 'ant-pagination-disabled'
+            disabledClass: 'ant-pagination-disabled',
+            continueButton:['ant-btn ant-btn-default ant-btn-lg lp-ant-btn-light'],
+            phoneButton:'ant-btn ant-btn-primary __im_basic__basic-input-action',
         };
 
         this.urlInfo = {
@@ -32,6 +34,116 @@ class HLiepinParser extends BaseParser {
             closeButton: 'closeBtn--', // 关闭按钮
             viewButton: '.ant-lpt-btn.ant-lpt-btn-primary' // 查看按钮
         };
+    }
+
+
+    /**
+     * 索要绑定手机号
+     * @param {*} phone 是否索要手机号
+     * @param {*} wechat 是否索要微信号
+     * @param {*} resume 是否索要简历附件
+     * @param {*} candidate 候选人信息
+     * @param {*} element 包含所有元素的父元素
+     * @returns 
+     */
+    async collectPhoneWechatResume(phone, wechat, resume, candidate,element) {
+        try {
+
+            // for(let i=0;i<this.selectors.continueButton.length;i++){
+            //     //先点击继续沟通
+            //     const continueButton = this.getElementByClassPrefix(element, this.selectors.continueButton[i]);
+                
+            //     if (continueButton) {
+            //         continueButton.click();
+            //     } else {
+            //         console.error('未找到继续沟通按钮');
+            //         return null;
+            //     }
+            // }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+
+            let buttonList = document.getElementsByClassName(this.selectors.phoneButton);
+            console.log(buttonList);
+            if(phone){
+            console.log('索要手机号');
+             const phoneButton = buttonList[0];
+            if (phoneButton) {
+                phoneButton.click();
+
+                //点击确定按钮
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                const confirmButton = document.querySelector(`[class^="ant-modal-confirm-btns"]`);
+                const confirmButton1 = confirmButton.querySelector(`[class^="ant-btn ant-btn-primary"]`);
+                if (confirmButton1) {
+                    confirmButton1.click();
+                }
+            }
+
+            }
+            if(wechat){
+                console.log('索要微信号');
+                const wechatButton = buttonList[1];
+                if (wechatButton) {
+                    wechatButton.click();
+                    //点击确定按钮
+                await new Promise(resolve => setTimeout(resolve, 800));
+                const confirmButton = document.querySelector(`[class^="ant-modal-confirm-btns"]`);
+                const confirmButton1 = confirmButton.querySelector(`[class^="ant-btn ant-btn-primary"]`);
+                if (confirmButton1) {
+                    confirmButton1.click();
+                }
+                }
+            }
+            if(resume){
+                console.log('索要简历附件');
+                const resumeButton = buttonList[2];
+                if (resumeButton) {
+                    resumeButton.click();
+                    //点击确定按钮
+                await new Promise(resolve => setTimeout(resolve, 800));
+                const confirmButton = document.querySelector(`[class^="ant-modal-confirm-btns"]`);
+                const confirmButton1 = confirmButton.querySelector(`[class^="ant-btn ant-btn-primary"]`);
+                if (confirmButton1) {
+                    confirmButton1.click();
+                }
+                }
+            }
+            //等待2秒
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log('等待2秒');
+            
+            // await randomDelay("确认索要信息");
+            //确认索要信息 可能会有多个弹框，需要循环点击确认
+        //     const confirmButtons = document.querySelectorAll(`[class^="${this.selectors.confirmSuoIndoButton}"]`);
+        // if (!confirmButtons) {
+        //     confirmButtons = document.querySelectorAll(`[class*="${this.selectors.confirmSuoIndoButton}"]`);
+        // }
+        //     console.log('确认按钮数量:', confirmButtons.length);
+        //     if (confirmButtons.length > 0) {
+        //         confirmButtons.forEach(button => button.click());
+        //     }
+
+
+            //关闭按钮
+            // const confirmButton = document.querySelector(`[style^="color: rgb(51, 51, 51); cursor: pointer;"]`);
+            // if (confirmButton) {
+            //     confirmButton.click();
+            // }
+        } catch (error) {
+            console.error('索要信息失败:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 检查是否有消息提示，有就开始处理
+     * @param {*} element 
+     * @returns 
+     */
+    async checkMessageTip(element){
+        return false;
     }
 
     // 添加sendMessage函数用于与index.js通信
@@ -212,7 +324,7 @@ class HLiepinParser extends BaseParser {
                             
                             // 读取后立即删除缓存
                             localStorage.removeItem('goodhr-candidate-detail');
-                            console.log('已删除localStorage中的候选人信息缓存');
+                            // console.log('已删除localStorage中的候选人信息缓存');
                             
                             // 处理获取到的响应
                             const matchedResponse = this.findMatchingResponse(responses, data);
@@ -574,6 +686,7 @@ class HLiepinParser extends BaseParser {
 
              // 点击确认按钮
              const confirmClickElement = this.getElementByClassPrefix(document, this.selectors.confirmClickTarget);
+             console.log('确认点击元素:', confirmClickElement);
              if (confirmClickElement) {
                 confirmClickElement.click();
                 return true;

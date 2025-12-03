@@ -32,6 +32,9 @@ class BossParser extends BaseParser {
             description: 'content',
             clickTarget: ['btn btn-greet', 'btn btn-getcontact search-btn-tip btn-prop-common prop-card-chat'],
             activeText: 'active-text',
+            continueButton:['btn btn-continue btn-outline'],
+            phoneButton:'operate-item',
+
             extraSelectors: [
                 { prefix: 'salary-text', type: '薪资' },
                 { prefix: 'job-info-primary', type: '基本信息' },
@@ -47,11 +50,186 @@ class BossParser extends BaseParser {
         this.detailSelectors = {
             detailLink: ['card-inner common-wrap', 'card-inner clear-fix', 'candidate-card-wrap', 'card-inner blue-collar-wrap', 'card-container', 'geek-info-card', 'card-inner new-geek-wrap'],
             closeButton: ['boss-popup__close', 'resume-custom-close', 'boss-popup__close','dialog-wrap active'],
-            closeButtonXpath: ['//*[@id="boss-dynamic-dialog-1j38fleo5"]/div/div[2]']
+            closeButtonXpath: ['//*[@id="boss-dynamic-dialog-1j38fleo5"]/div/div[2]'],
+            // 消息提示
+            messageTip:'chat-global-entry',
+            //消息列表元素
+            messageListItem:'friend-list-item',
         };
 
         // 初始化数据拦截监听
         this.initDataInterceptor();
+    }
+
+    /**
+     * 检查是否有消息提示，有就开始处理
+     * @param {*} element 
+     * @returns 
+     */
+    async checkMessageTip(element,phone,wechat,resume){
+
+        //暂时不处理
+        return false;
+      
+        let messageTip = window.parent.document.getElementsByClassName(this.detailSelectors.messageTip)
+      if(messageTip.length>0){
+        messageTip = messageTip[0];
+      }
+        console.log("消息数量:",messageTip.textContent.trim());
+       let messageCount = 0
+       try{
+       messageCount = parseInt(messageTip.textContent.trim())||0;
+       }catch(error){
+        console.error("解析消息数量失败:",error);
+       }
+        if(messageCount<=0){
+            return false;
+        }
+        //开始处理消息
+        // 1. 点击消息提示
+        
+        messageTip.click();
+        await new Promise(resolve => setTimeout(resolve, 2500));
+
+        // 3. 查找出待处理的列表
+        let messageListItems = window.parent.document.getElementsByClassName("friend-list-item");
+        console.log("消息列表元素数量:",messageListItems);
+        
+        for(let i=0;i<messageListItems.length;i++){
+            console.log(messageListItems[i].textContent.trim());
+             let messageCount =0;
+            try{
+            messageCount = parseInt(messageListItems[i].getElementsByClassName("badge-count badge-count-common-less")[0].textContent.trim())||0;
+            }catch(error){
+               
+            }
+            if(messageCount<=0){
+                continue;
+            }
+            //点击消息
+            messageListItems[i].click();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            // 点击索要绑定手机号
+            await this.clickPhoneButton(phone, wechat, resume);
+            
+        }        
+
+        // 3. 点击索要绑定手机号
+        // 4. 关闭列表
+        messageTip.click();
+
+
+        return false;
+    }
+
+    /**
+     * 点击索要绑定手机号按钮
+     * @param {是否索要手机号} phone 
+     * @param {是否索要微信} wechat 
+     * @param {是否索要简历} resume 
+     */
+    async clickPhoneButton(phone, wechat, resume){
+       
+
+            const suoyaolist = window.parent.document.querySelectorAll(`[class^="${this.selectors.phoneButton}"]`);
+
+            
+            if (!suoyaolist) {
+                console.error('未找到索要信息的按钮');
+                return null;
+            }
+
+            if(suoyaolist.length<=3){
+                console.error('未找到索要手机号按钮');
+                return null;
+            }
+            
+            console.log("索要手机号按钮:",suoyaolist);
+            
+
+            if (phone) {
+                
+            suoyaolist[3].click();
+             await new Promise(resolve => setTimeout(resolve, 200));
+                const confirmphoneButton = document.querySelector(`[class^="boss-btn-primary boss-btn"]`);
+
+                if (confirmphoneButton) {
+                    confirmphoneButton.click();
+                }
+            }
+            if(wechat){
+
+
+                suoyaolist[4].click();
+                             await new Promise(resolve => setTimeout(resolve, 200));
+
+                 const confirmphoneButton = document.querySelector(`[class^="boss-btn-primary boss-btn"]`);
+
+                if (confirmphoneButton) {
+                        confirmphoneButton.click();
+                    }
+            }
+            if(resume){
+                suoyaolist[2].click();          
+                             await new Promise(resolve => setTimeout(resolve, 200));
+ 
+                 const confirmphoneButton = document.querySelector(`[class^="boss-btn-primary boss-btn"]`);
+           if (confirmphoneButton) {
+                confirmphoneButton.click();
+            }
+            }
+    }
+
+
+          //索要绑定手机号
+    async collectPhoneWechatResume(phone, wechat, resume, candidate,element) {
+        try {
+
+            //等等1秒
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            for(let i=0;i<this.selectors.continueButton.length;i++){
+                //先点击继续沟通
+                const continueButton = element.querySelectorAll(`[class^="${this.selectors.continueButton[i]}"]`);
+                 for(let j=0;j<continueButton.length;j++){
+                    // console.log(continueButton[j].textContent.trim());
+                    // console.log(continueButton[j]);
+                    continueButton[j].click();
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    //  console.log(continueButton[j]);
+                    continueButton[j].click();
+                 }
+
+               
+            }
+            // await randomDelay("索要信息");
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+
+            await this.clickPhoneButton(phone, wechat, resume);
+
+            //等待2秒
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            // console.log('等待2秒');
+            
+
+            //点击确认按钮
+            const closeButton = document.querySelector(`[class^="iboss iboss-close"]`);
+            // console.log("关闭按钮",closeButton);
+
+            if (closeButton) {
+                closeButton.click();
+            }
+
+            const closeButton2 = document.querySelector(`[class^="km-icon sati ignore-im-widget-click sati-times"]`);
+            // console.log("关闭按钮2",closeButton2);
+            if (closeButton2) {
+                closeButton2.click();
+            }
+        } catch (error) {
+            console.error('索要手机号失败:', error);
+            return null;
+        }
     }
 
     // 初始化数据拦截监听

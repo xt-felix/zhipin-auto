@@ -683,19 +683,19 @@
                     <div class="keyword-list" id="exclude-keyword-list"></div>
 
                     <!-- //索要手机号 -->
-                    <div style="margin-bottom: 8px;display: flex;gap: 10px;">
+                     <div style="margin-bottom: 8px;display: flex;gap: 10px;">
                         <label class="checkbox-wrapper">
-                            <input type="checkbox" id="collect-phone">
+                            <input type="checkbox" class="collect-phone">
                             <span class="checkbox-label">索要手机号</span>
                         </label>
 
                         <label class="checkbox-wrapper">
-                            <input type="checkbox" id="collect-wechat">
+                            <input type="checkbox" class="collect-wechat">
                             <span class="checkbox-label">索要微信号</span>
                         </label>
 
                         <label class="checkbox-wrapper">
-                            <input type="checkbox" id="collect-resume">
+                            <input type="checkbox" class="collect-resume">
                             <span class="checkbox-label">索要简历</span>
                         </label>
                     </div>
@@ -818,7 +818,22 @@
                     <div style="font-size: 11px; color: #666; margin-bottom: 10px;">
                         
                     </div>
-                   
+                   <div style="margin-bottom: 8px;display: flex;gap: 10px;">
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" class="collect-phone">
+                            <span class="checkbox-label">索要手机号</span>
+                        </label>
+
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" class="collect-wechat">
+                            <span class="checkbox-label">索要微信号</span>
+                        </label>
+
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" class="collect-resume">
+                            <span class="checkbox-label">索要简历</span>
+                        </label>
+                    </div>
                 </div>
 
 
@@ -895,21 +910,7 @@
                     </div>
                 </div>
 
-                <div class="filter-group">
-                    <label class="title">沟通处理设置</label>
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" id="collect-phone" class="checkbox-input" checked>
-                        <span class="checkbox-label">收集手机号</span>
-                    </label>
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" id="collect-wechat" class="checkbox-input" checked>
-                        <span class="checkbox-label">收集微信号</span>
-                    </label>
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" id="collect-resume" class="checkbox-input" checked>
-                        <span class="checkbox-label">收集简历附件</span>
-                    </label>
-                </div>
+                
 
                 <div class="filter-group">
                     <label class="title">设备指纹</label>
@@ -1004,6 +1005,7 @@
                 </label>
             </div> -->
             
+            
             <!-- 初始状态的按钮组 -->
             <div class="initial-buttons" id="initialButtons">
                 <button id="scrollButton" class="btn primary-btn">
@@ -1029,6 +1031,8 @@
                     停止
                 </button>
             </div>
+
+             
         </div>
 
         <div style="background: #1e1e1e; color: #00ff00; font-family: 'Consolas', monospace; padding: 8px; height: 100px; overflow-y: auto; font-size: 12px; line-height: 1.5;
