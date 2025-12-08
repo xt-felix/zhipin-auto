@@ -476,11 +476,20 @@ function addHighlightReason(element, reason, color) {
 // 处理单个元素的函数
 async function processElement(element, doc) {
 
+    if(currentParser.filterSettings==null||currentParser.aiSettings.communicationConfig==null){
+        currentParser.filterSettings={
+            communicationConfig:{
+                collectPhone:false,
+                collectWechat:false,
+                collectResume:false
+            }
+        }
+    }
+    console.log("是否收集手机号:",currentParser.aiSettings.communicationConfig);
+    
 
     //处理消息提示
-        console.log('开始处理消息提示');
-
-    await currentParser.checkMessageTip(element,currentParser.filterSettings.communicationConfig.collectPhone||false,currentParser.filterSettings.communicationConfig.collectWechat||false,currentParser.filterSettings.communicationConfig.collectResume||false);
+    await currentParser.checkMessageTip(element,currentParser.aiSettings.communicationConfig.collectPhone||false,currentParser.aiSettings.communicationConfig.collectWechat||false,currentParser.aiSettings.communicationConfig.collectResume||false);
 
     try {
         // 发送计数请求到服务器（不等待响应）
@@ -687,11 +696,11 @@ async function processElement(element, doc) {
                     const clicked = await currentParser.clickMatchedItem(element);
                     if (clicked) {
                         try {
-                         if (currentParser.filterSettings.communicationConfig.collectPhone||currentParser.filterSettings.communicationConfig.collectWechat||currentParser.filterSettings.communicationConfig.collectResume) {
-                            const phone = await currentParser.collectPhoneWechatResume(currentParser.filterSettings.communicationConfig.collectPhone, currentParser.filterSettings.communicationConfig.collectWechat, currentParser.filterSettings.communicationConfig.collectResume, candidate,element);
+                         if (currentParser.aiSettings.communicationConfig.collectPhone||currentParser.aiSettings.communicationConfig.collectWechat||currentParser.aiSettings.communicationConfig.collectResume) {
+                            const phone = await currentParser.collectPhoneWechatResume(currentParser.aiSettings.communicationConfig.collectPhone, currentParser.aiSettings.communicationConfig.collectWechat, currentParser.aiSettings.communicationConfig.collectResume, candidate,element);
                         }
                         } catch (error) {
-                            console.error('索要配置异常:', error,currentParser.filterSettings.communicationConfig);
+                            console.error('索要配置异常:', error,currentParser.aiSettings.communicationConfig);
                             return null;
                         }
                         
@@ -779,7 +788,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                 // 更新点击频率设置
                 if (message.data.clickFrequency !== undefined) {
                     currentParser.clickCandidateConfig.frequency = message.data.clickFrequency;
-                    // console.log('更新点击频率为:', message.data.clickFrequency);
                 }
                 currentParser.aiMode = false;
 
@@ -934,7 +942,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                         currentParser.jobInfo = message.data.jobInfo;
                     }
                     if (message.data.communicationConfig) {
-                        currentParser.communicationConfig = message.data.communicationConfig;
+                        currentParser.aiSettings.communicationConfig = message.data.communicationConfig;
                     }
                     if (message.data.runModeConfig) {
                         currentParser.runModeConfig = message.data.runModeConfig;

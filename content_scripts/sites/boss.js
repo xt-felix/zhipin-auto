@@ -69,7 +69,7 @@ class BossParser extends BaseParser {
     async checkMessageTip(element,phone,wechat,resume){
 
         //暂时不处理
-        return false;
+        return true;
       
         let messageTip = window.parent.document.getElementsByClassName(this.detailSelectors.messageTip)
       if(messageTip.length>0){
@@ -547,13 +547,14 @@ class BossParser extends BaseParser {
                 if (element2) {
                     detailLink = element2;
                 }
+
+                
             }
 
             //console.log(detailLink);
             if (detailLink) {
                 detailLink.click();
                 // console.log('点击候选人详情成功');
-
                 return true;
             } else {
 

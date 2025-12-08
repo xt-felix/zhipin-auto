@@ -1056,7 +1056,6 @@ async function startAutoScroll() {
 							scrollDelayMax: parseInt(delayMaxInput.value) || 5,
 							clickFrequency: parseInt(clickFrequencyInput.value) || 7,
 							enableSound: enableSoundCheckbox.checked,
-
 							communicationConfig: serverData.communicationConfig
 						}
 					},
@@ -2275,7 +2274,9 @@ function updateAIConfigUI() {
 		'THUDM/GLM-4.1V-9B-Thinking',
 		'Qwen/Qwen3-8B',
 		'deepseek-ai/DeepSeek-R1',
-		'deepseek-ai/DeepSeek-V3'
+		'deepseek-ai/DeepSeek-V3',
+		'deepseek-ai/DeepSeek-V3.1-Terminus',
+		'moonshotai/Kimi-K2-Instruct-0905',
 	];
 
 	if (presetModels.includes(serverData.ai_config.model)) {
