@@ -483,6 +483,8 @@ class LiepinParser extends BaseParser {
             if(phone){
             console.log('索要手机号');
              const phoneButton = this.getElementByClassPrefix(document, this.selectors.phoneButton);
+            await new Promise(resolve => setTimeout(resolve, 500));
+
             if (phoneButton) {
                 phoneButton.click();
             }

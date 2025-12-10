@@ -60,7 +60,7 @@ class HLiepinParser extends BaseParser {
             //         return null;
             //     }
             // }
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
 
             let buttonList = document.getElementsByClassName(this.selectors.phoneButton);
@@ -70,7 +70,6 @@ class HLiepinParser extends BaseParser {
              const phoneButton = buttonList[0];
             if (phoneButton) {
                 phoneButton.click();
-
                 //点击确定按钮
                 await new Promise(resolve => setTimeout(resolve, 800));
                 

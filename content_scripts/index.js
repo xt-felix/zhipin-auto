@@ -476,8 +476,8 @@ function addHighlightReason(element, reason, color) {
 // 处理单个元素的函数
 async function processElement(element, doc) {
 
-    if(currentParser.filterSettings==null||currentParser.aiSettings.communicationConfig==null){
-        currentParser.filterSettings={
+    if(currentParser.aiSettings==null||currentParser.aiSettings.communicationConfig==null){
+        currentParser.aiSettings={
             communicationConfig:{
                 collectPhone:false,
                 collectWechat:false,
