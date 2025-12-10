@@ -97,11 +97,12 @@ class HLiepinParser extends BaseParser {
                     wechatButton.click();
                     //点击确定按钮
                 await new Promise(resolve => setTimeout(resolve, 800));
-                const confirmButton = document.querySelector(`[class^="ant-modal-confirm-btns"]`);
-                const confirmButton1 = confirmButton.querySelector(`[class^="ant-btn ant-btn-primary"]`);
-                if (confirmButton1) {
-                    confirmButton1.click();
-                }
+                
+                const confirmButton = document.querySelector(`[class^="ant-im-modal-confirm-btns"]`);
+                const confirmButton1 = confirmButton.querySelectorAll(`[class^="ant-im-btn ant-im-btn-primary"]`);
+               for(let j=0;j<confirmButton1.length;j++){
+                confirmButton1[j].click();
+               }
                 }
             }
             if(resume){
@@ -111,11 +112,12 @@ class HLiepinParser extends BaseParser {
                     resumeButton.click();
                     //点击确定按钮
                 await new Promise(resolve => setTimeout(resolve, 800));
-                const confirmButton = document.querySelector(`[class^="ant-modal-confirm-btns"]`);
-                const confirmButton1 = confirmButton.querySelector(`[class^="ant-btn ant-btn-primary"]`);
-                if (confirmButton1) {
-                    confirmButton1.click();
-                }
+               
+                const confirmButton = document.querySelector(`[class^="ant-im-modal-confirm-btns"]`);
+                const confirmButton1 = confirmButton.querySelectorAll(`[class^="ant-im-btn ant-im-btn-primary"]`);
+               for(let j=0;j<confirmButton1.length;j++){
+                confirmButton1[j].click();
+               }
                 }
             }
             //等待2秒
