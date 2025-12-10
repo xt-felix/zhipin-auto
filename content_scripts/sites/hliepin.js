@@ -20,7 +20,7 @@ class HLiepinParser extends BaseParser {
             paginationContainer: 'ant-pagination',
             disabledClass: 'ant-pagination-disabled',
             continueButton:['ant-btn ant-btn-default ant-btn-lg lp-ant-btn-light'],
-            phoneButton:'ant-btn ant-btn-primary __im_basic__basic-input-action',
+            phoneButton:['ant-btn ant-btn-primary __im_basic__basic-input-action','im-ui-action-button action-item'],
         };
 
         this.urlInfo = {
@@ -30,7 +30,7 @@ class HLiepinParser extends BaseParser {
 
         // 添加猎聘特定的详情页选择器
         this.detailSelectors = {
-            detailLink: 'tlog-common-resume-card qkdlK', // 点击姓名打开详情
+            detailLink: 'tlog-common-resume-card', // 点击姓名打开详情
             closeButton: 'closeBtn--', // 关闭按钮
             viewButton: '.ant-lpt-btn.ant-lpt-btn-primary' // 查看按钮
         };
@@ -61,9 +61,18 @@ class HLiepinParser extends BaseParser {
             //     }
             // }
             await new Promise(resolve => setTimeout(resolve, 2000));
+            let buttonList = []
+            for(let i=0;i<this.selectors.phoneButton.length;i++){
+            //先点击继续沟通
+            const continueButton =document.getElementsByClassName(this.selectors.phoneButton[i]);
+            console.log(continueButton);
+                if(continueButton!=null&&continueButton.length>0){
+                    buttonList=(continueButton);
+                }
 
+            }
 
-            let buttonList = document.getElementsByClassName(this.selectors.phoneButton);
+            //  buttonList = document.getElementsByClassName(this.selectors.phoneButton);
             console.log(buttonList);
             if(phone){
             console.log('索要手机号');
@@ -73,11 +82,11 @@ class HLiepinParser extends BaseParser {
                 //点击确定按钮
                 await new Promise(resolve => setTimeout(resolve, 800));
                 
-                const confirmButton = document.querySelector(`[class^="ant-modal-confirm-btns"]`);
-                const confirmButton1 = confirmButton.querySelector(`[class^="ant-btn ant-btn-primary"]`);
-                if (confirmButton1) {
-                    confirmButton1.click();
-                }
+                const confirmButton = document.querySelector(`[class^="ant-im-modal-confirm-btns"]`);
+                const confirmButton1 = confirmButton.querySelectorAll(`[class^="ant-im-btn ant-im-btn-primary"]`);
+               for(let j=0;j<confirmButton1.length;j++){
+                confirmButton1[j].click();
+               }
             }
 
             }
@@ -319,7 +328,7 @@ class HLiepinParser extends BaseParser {
                         if (data.source === 'goodhr-plugin' && 
                             data.type === 'candidate-detail-response') {
                             responses.push(data);
-                            console.log(`从localStorage获取到候选人信息:`, data.data);
+
                             
                             // 读取后立即删除缓存
                             localStorage.removeItem('goodhr-candidate-detail');
@@ -713,12 +722,13 @@ class HLiepinParser extends BaseParser {
 
             if (detailLink) {
                 detailLink.click();
-
                 return true;
+            }else{
+             console.log('未找到详情链接');
+            return false;
+
             }
 
-            console.log('未找到详情链接');
-            return false;
         } catch (error) {
             console.error('点击候选人详情失败:', error);
             return false;
