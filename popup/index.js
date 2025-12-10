@@ -2501,7 +2501,7 @@ async function handleBalanceCheck() {
 			updateBalanceDisplay(balance);
 
 			if (balance < 1) {
-				const message = `当前Token对应的账号余额不足1元（当前余额: ¥${balance.toFixed(2)}）。\n\n可能会无法使用部分模型。\n\n你可以选择：\n1. 切换免费模型\n2. 前往轨迹流动充值（首次需要实名认证）\n\n是否前往轨迹流动官网充值？`;
+				const message = `当前Token对应的账号余额不足1元（当前余额: ¥${balance.toFixed(2)}）。\n\n可能会无法使用部分模型。\n\n你可以选择：\n1. 切换免费模型\n2.在微信联系作者低价充值(5折)\n3. 前往轨迹流动原价充值（首次需要实名认证）\n\n是否前往轨迹流动官网原价充值？`;
 
 				if (confirm(message)) {
 					// 打开轨迹流动充值页面
