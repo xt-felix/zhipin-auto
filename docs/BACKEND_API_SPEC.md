@@ -4,22 +4,34 @@
 
 本文档定义了 SmartHR Assistant 浏览器扩展所需的后端 API 接口规范。
 
-**当前前端配置的 API 基地址**: `config.js` 中的 `API_BASE`
+**前端配置的 API 基地址**: `frontend/config.js` 中的 `API_BASE`
 
 ---
 
 ## 一、API 接口清单
 
-| 序号 | 接口路径 | 方法 | 功能描述 | 优先级 | 状态 |
-|------|----------|------|----------|--------|------|
-| 1 | `/getjson.php` | GET | 获取用户配置 | P0 | [ ] 待开发 |
-| 2 | `/updatejson.php` | POST | 更新用户配置 | P0 | [ ] 待开发 |
-| 3 | `/checkaitrial.php` | GET/POST | AI试用期检查/记录 | P0 | [ ] 待开发 |
-| 4 | `/checkfingerprint.php` | GET | 设备指纹绑定检查 | P0 | [ ] 待开发 |
-| 5 | `/v.json` | GET | 版本信息 | P1 | [ ] 待开发 |
-| 6 | `/ads.json` | GET | 广告配置 | P2 | [ ] 待开发 |
-| 7 | `/dashang.json` | GET | 打赏排行榜 | P2 | [ ] 待开发 |
-| 8 | `/counter.php` | POST | 使用统计 | P2 | [ ] 待开发 |
+### 核心接口（P0 - 必须开发）
+
+| 序号 | 接口路径 | 方法 | 功能描述 | 调用位置 |
+|------|----------|------|----------|----------|
+| 1 | `/getjson.php` | GET | 获取用户配置 | popup/index.js:2044 |
+| 2 | `/updatejson.php` | POST | 更新用户配置 | popup/index.js:2896 |
+| 3 | `/checkaitrial.php` | GET/POST | AI试用期检查/记录 | popup/index.js:1926, fingerprint-device.js:167 |
+| 4 | `/checkfingerprint.php` | GET | 设备指纹绑定检查 | fingerprint-device.js:149 |
+
+### 重要接口（P1 - 推荐开发）
+
+| 序号 | 接口路径 | 方法 | 功能描述 | 调用位置 |
+|------|----------|------|----------|----------|
+| 5 | `/v.json` | GET | 版本信息与公告 | popup/index.js:1378 |
+
+### 增强功能（P2 - 可选开发）
+
+| 序号 | 接口路径 | 方法 | 功能描述 | 调用位置 |
+|------|----------|------|----------|----------|
+| 6 | `/ads.json` | GET | 广告配置 | popup/index.js:2608, content_scripts/index.js:1731 |
+| 7 | `/dashang.json` | GET | 打赏排行榜 | popup/index.js:1712, background.js:47 |
+| 8 | `/counter.php` | GET | 使用统计 | content_scripts/index.js:497 |
 
 ---
 
@@ -254,7 +266,26 @@
       }
     },
     "middle": null,
-    "bottom": null
+    "bottom": null,
+    "pageAds": [
+      {
+        "id": "page_ad_001",
+        "title": "页面广告",
+        "content": "广告内容",
+        "link": "https://example.com",
+        "x": 100,
+        "y": 100,
+        "width": 300,
+        "height": 200,
+        "vip_show": false,
+        "bottom_content": "底部提示文字",
+        "style": {
+          "background": "#fff",
+          "color": "#333",
+          "border": "1px solid #ddd"
+        }
+      }
+    ]
   }
 }
 ```
@@ -285,16 +316,9 @@
 
 ### 2.8 使用统计
 
-**接口**: `POST /counter.php`
+**接口**: `GET /counter.php`
 
-**请求体**:
-```json
-{
-  "phone": "13800138000",
-  "action": "greeting",
-  "count": 1
-}
-```
+**说明**: 前端每处理一个候选人时调用，用于统计使用量。不等待响应。
 
 **响应示例**:
 ```json
@@ -340,7 +364,7 @@ CREATE TABLE device_fingerprints (
 ```sql
 CREATE TABLE usage_stats (
   id INT PRIMARY KEY AUTO_INCREMENT,
-  phone VARCHAR(11) NOT NULL COMMENT '手机号',
+  phone VARCHAR(11) COMMENT '手机号',
   action_type VARCHAR(50) NOT NULL COMMENT '操作类型: greeting/download/ai_filter',
   count INT DEFAULT 0 COMMENT '次数',
   date DATE NOT NULL COMMENT '日期',
@@ -406,26 +430,14 @@ CREATE TABLE versions (
 
 ---
 
-## 五、前端调用示例
-
-### 5.1 config.js 配置修改
-
-```javascript
-const CONFIG = {
-    // 修改为你的后端地址
-    API_BASE: 'https://your-api-domain.com',
-    // ... 其他配置
-};
-```
-
-### 5.2 接口调用位置
+## 五、前端调用位置参考
 
 | 文件 | 调用的接口 |
 |------|-----------|
-| `popup/index.js` | getjson, updatejson, checkaitrial, dashang, ads, v.json |
-| `utils/fingerprint-device.js` | checkfingerprint, checkaitrial |
-| `content_scripts/index.js` | counter, ads |
-| `background.js` | dashang |
+| `frontend/popup/index.js` | getjson, updatejson, checkaitrial, dashang, ads, v.json |
+| `frontend/utils/fingerprint-device.js` | checkfingerprint, checkaitrial |
+| `frontend/content_scripts/index.js` | counter, ads |
+| `frontend/background.js` | dashang |
 
 ---
 
@@ -469,8 +481,9 @@ const CONFIG = {
 
 | 组件 | 推荐方案 | 备选方案 |
 |------|---------|---------|
-| 后端语言 | Node.js (Express) | PHP / Python (FastAPI) |
-| 数据库 | MySQL 8.0 | PostgreSQL |
+| 后端语言 | Python 3.10+ (FastAPI) | Node.js (Express) |
+| 数据库 | MySQL 8.0 | PostgreSQL / SQLite |
+| ORM | SQLAlchemy | Prisma |
 | 缓存 | Redis | 内存缓存 |
 | Web服务器 | Nginx | Apache |
 | 部署方式 | Docker | 直接部署 |
@@ -482,6 +495,54 @@ const CONFIG = {
 - 存储: 10GB+
 - 带宽: 1Mbps+
 
+### FastAPI 路由示例
+
+```python
+from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+# 配置 CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Chrome 扩展需要
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/getjson.php")
+async def get_json(phone: str = Query(...)):
+    # 实现获取用户配置
+    pass
+
+@app.post("/updatejson.php")
+async def update_json(phone: str = Query(...)):
+    # 实现更新用户配置
+    pass
+
+@app.get("/checkaitrial.php")
+async def check_ai_trial(fingerprint: str = Query(...)):
+    # 实现检查AI试用期
+    pass
+
+@app.post("/checkaitrial.php")
+async def record_device():
+    # 实现记录设备
+    pass
+
+@app.get("/checkfingerprint.php")
+async def check_fingerprint(fingerprint: str = Query(...), phone: str = Query(...)):
+    # 实现设备指纹检查
+    pass
+
+@app.get("/v.json")
+async def get_version():
+    # 实现获取版本信息
+    pass
+```
+
 ---
 
 ## 更新日志
@@ -489,3 +550,4 @@ const CONFIG = {
 | 日期 | 版本 | 变更说明 |
 |------|------|---------|
 | 2025-01-07 | 1.0.0 | 初始版本，基于原项目分析 |
+| 2025-01-07 | 1.1.0 | 补充接口调用位置、FastAPI示例、pageAds字段 |
