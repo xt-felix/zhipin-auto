@@ -56,7 +56,7 @@ uvicorn app.main:app --reload --port 8000
 ## 开发者
 
 - **前端**: [xt-felix](https://github.com/xt-felix)
-- **后端**: [xt-felix](https://github.com/xt-felix)
+- **后端**: 待定
 
 ## 许可证
 
