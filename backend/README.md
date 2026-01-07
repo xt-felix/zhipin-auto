@@ -21,7 +21,7 @@ git submodule update --init --recursive
 
 ## 后端 API 规范
 
-详细的接口规范请参考: [BACKEND_API_SPEC.md](../frontend/docs/BACKEND_API_SPEC.md)
+详细的接口规范请参考: [BACKEND_API_SPEC.md](../docs/BACKEND_API_SPEC.md)
 
 ## 技术栈要求
 

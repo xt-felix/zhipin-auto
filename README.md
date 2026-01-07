@@ -53,7 +53,7 @@ git submodule update --init --recursive
 
 ### API 文档
 
-详细接口规范：[frontend/docs/BACKEND_API_SPEC.md](frontend/docs/BACKEND_API_SPEC.md)
+详细接口规范：[docs/BACKEND_API_SPEC.md](docs/BACKEND_API_SPEC.md)
 
 ## 开发者
 
