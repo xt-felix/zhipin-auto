@@ -4,49 +4,9 @@ SmartHR Assistant 后端 API 服务
 
 ## 技术栈
 
-- Python 3.10+
-- FastAPI
-- SQLAlchemy (ORM)
-- MySQL / SQLite
-- Uvicorn (ASGI Server)
-
-## 快速开始
-
-### 1. 安装依赖
-
-```bash
-cd backend
-pip install -r requirements.txt
-```
-
-### 2. 配置环境变量
-
-```bash
-cp .env.example .env
-# 编辑 .env 文件配置数据库等信息
-```
-
-### 3. 初始化数据库
-
-```bash
-python -m app.db.init_db
-```
-
-### 4. 启动服务
-
-```bash
-# 开发模式
-uvicorn app.main:app --reload --port 8000
-
-# 生产模式
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
+待定
 
 ## API 文档
-
-启动服务后访问：
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
 
 详细接口规范请参考: [BACKEND_API_SPEC.md](../docs/BACKEND_API_SPEC.md)
 

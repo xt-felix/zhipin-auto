@@ -39,15 +39,7 @@ SmartHR-Assistant/
 
 ## 后端 (API Server)
 
-后端服务在 `backend/` 目录中开发，使用 Python FastAPI 框架。
-
-### 快速启动
-
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
+后端服务在 `backend/` 目录中开发，技术栈待定。
 
 ### API 文档
 
