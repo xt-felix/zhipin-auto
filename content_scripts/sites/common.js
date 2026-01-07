@@ -41,22 +41,55 @@ class BaseParser {
         this.filterSettings = settings;
     }
 
-
-    /**
-     * 在元素里查找元素。重复三次，每次间隔1秒
+     /**
+     * 在元素里查找元素。重复五次，每次间隔1秒
      * @param {*} candidate 要查找的元素
      * @param {*} selector 要查找的元素的选择器
      * @returns 
      */
-    async findElementWithRetry(candidate, selector) {
-        for (let attempt = 0; attempt < 3; attempt++) {
+    async CommonQuerySelector(candidate, selector) {
+        for (let attempt = 0; attempt < 5; attempt++) {
+            const element = candidate.querySelector(selector);
+            if (element) {
+                return element;
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 等待1秒
+        }
+        return null; // 5次尝试后仍未找到
+    }
+
+    /**
+     * 在元素里查找元素。重复五次，每次间隔1秒
+     * @param {*} candidate 要查找的元素
+     * @param {*} selector 要查找的元素的选择器
+     * @returns 
+     */
+    async CommonQuerySelectorAll(candidate, selector) {
+        for (let attempt = 0; attempt < 5; attempt++) {
             const elements = candidate.querySelectorAll(selector);
             if (elements.length > 0) {
                 return elements;
             }
             await new Promise(resolve => setTimeout(resolve, 1000)); // 等待1秒
         }
-        return null; // 3次尝试后仍未找到
+        return []; // 5次尝试后仍未找到
+    }
+
+    /**
+     * 在元素里查找类名5次 每次间隔1秒
+     * @param {*} element 
+     * @param {*} selector 
+     * @returns 
+     */
+   async  CommonGetElementsByClassName(element, selector) {
+       for (let attempt = 0; attempt < 5; attempt++) {
+            const elements = element.getElementsByClassName(selector);
+            if (elements.length > 0) {
+                return elements;
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 等待1秒
+        }
+        return []; // 5次尝试后仍未找到
     }
 
     // 基础的筛选方法

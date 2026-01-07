@@ -64,12 +64,11 @@ class HLiepinParser extends BaseParser {
             let buttonList = []
             for(let i=0;i<this.selectors.phoneButton.length;i++){
             //先点击继续沟通
-            const continueButton =document.getElementsByClassName(this.selectors.phoneButton[i]);
+            const continueButton = await this.CommonGetElementsByClassName(element, this.selectors.phoneButton[i]);
             console.log(continueButton);
                 if(continueButton!=null&&continueButton.length>0){
                     buttonList=(continueButton);
                 }
-
             }
 
             //  buttonList = document.getElementsByClassName(this.selectors.phoneButton);
@@ -82,12 +81,14 @@ class HLiepinParser extends BaseParser {
                 //点击确定按钮
                 await new Promise(resolve => setTimeout(resolve, 800));
                 
-                const confirmButton = document.querySelector(`[class^="ant-im-modal-confirm-btns"]`);
-                const confirmButton1 = confirmButton.querySelectorAll(`[class^="ant-im-btn ant-im-btn-primary"]`);
-               for(let j=0;j<confirmButton1.length;j++){
-                confirmButton1[j].click();
-               }
-            }
+                const confirmButton = await this.CommonQuerySelector(document, `[class^="ant-im-modal-confirm-btns"]`);
+                if(confirmButton){
+                    const confirmButton1 = this.CommonQuerySelectorAll(confirmButton,`[class^="ant-im-btn ant-im-btn-primary"]`);
+                        for(let j=0;j<confirmButton1.length;j++){
+                            confirmButton1[j].click();
+                        }
+                    }
+                }
 
             }
             if(wechat){
@@ -98,11 +99,13 @@ class HLiepinParser extends BaseParser {
                     //点击确定按钮
                 await new Promise(resolve => setTimeout(resolve, 800));
                 
-                const confirmButton = document.querySelector(`[class^="ant-im-modal-confirm-btns"]`);
-                const confirmButton1 = confirmButton.querySelectorAll(`[class^="ant-im-btn ant-im-btn-primary"]`);
-               for(let j=0;j<confirmButton1.length;j++){
-                confirmButton1[j].click();
-               }
+                const confirmButton = await this.CommonQuerySelector(document, `[class^="ant-im-modal-confirm-btns"]`);
+                if(confirmButton){
+                    const confirmButton1 = this.CommonQuerySelectorAll(confirmButton,`[class^="ant-im-btn ant-im-btn-primary"]`);
+                       for(let j=0;j<confirmButton1.length;j++){
+                        confirmButton1[j].click();
+                       }
+                    }
                 }
             }
             if(resume){
@@ -113,11 +116,13 @@ class HLiepinParser extends BaseParser {
                     //点击确定按钮
                 await new Promise(resolve => setTimeout(resolve, 800));
                
-                const confirmButton = document.querySelector(`[class^="ant-im-modal-confirm-btns"]`);
-                const confirmButton1 = confirmButton.querySelectorAll(`[class^="ant-im-btn ant-im-btn-primary"]`);
-               for(let j=0;j<confirmButton1.length;j++){
-                confirmButton1[j].click();
-               }
+                const confirmButton = await this.CommonQuerySelector(document, `[class^="ant-im-modal-confirm-btns"]`);
+                if(confirmButton){
+                    const confirmButton1 = this.CommonQuerySelectorAll(confirmButton,`[class^="ant-im-btn ant-im-btn-primary"]`);
+                       for(let j=0;j<confirmButton1.length;j++){
+                        confirmButton1[j].click();
+                       }
+                    }
                 }
             }
             //等待2秒
