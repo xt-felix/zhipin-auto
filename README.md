@@ -10,9 +10,10 @@ SmartHR-Assistant/
 │   ├── manifest.json
 │   ├── popup/
 │   ├── content_scripts/
-│   ├── background.js
-│   └── docs/          # API 文档
-├── backend/           # 后端 API 服务 (Submodule 占位)
+│   └── background.js
+├── backend/           # 后端 API 服务
+├── docs/              # 项目文档
+│   └── BACKEND_API_SPEC.md
 ├── README.md
 └── LICENSE
 ```
@@ -38,17 +39,14 @@ SmartHR-Assistant/
 
 ## 后端 (API Server)
 
-后端服务独立开发，完成后将作为 Git Submodule 添加。
+后端服务在 `backend/` 目录中开发，使用 Python FastAPI 框架。
 
-### 添加 Submodule
+### 快速启动
 
 ```bash
-# 删除占位目录
-rm -rf backend
-
-# 添加后端仓库
-git submodule add https://github.com/xt-felix/smarthr-backend.git backend
-git submodule update --init --recursive
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 ```
 
 ### API 文档
@@ -58,7 +56,7 @@ git submodule update --init --recursive
 ## 开发者
 
 - **前端**: [xt-felix](https://github.com/xt-felix)
-- **后端**: 待定
+- **后端**: [xt-felix](https://github.com/xt-felix)
 
 ## 许可证
 

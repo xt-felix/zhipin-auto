@@ -1,34 +1,54 @@
 # SmartHR Assistant Backend
 
-此目录为后端服务占位目录。
+SmartHR Assistant 后端 API 服务
 
-## 说明
-
-后端服务由其他同事独立开发，完成后将作为 Git Submodule 添加到此目录。
-
-## 添加 Submodule 方法
-
-```bash
-# 删除此占位目录
-rm -rf backend
-
-# 添加后端仓库作为 submodule
-git submodule add https://github.com/xt-felix/smarthr-backend.git backend
-
-# 初始化并更新 submodule
-git submodule update --init --recursive
-```
-
-## 后端 API 规范
-
-详细的接口规范请参考: [BACKEND_API_SPEC.md](../docs/BACKEND_API_SPEC.md)
-
-## 技术栈要求
+## 技术栈
 
 - Python 3.10+
-- FastAPI / Flask
-- MySQL / PostgreSQL
-- Redis (可选)
+- FastAPI
+- SQLAlchemy (ORM)
+- MySQL / SQLite
+- Uvicorn (ASGI Server)
+
+## 快速开始
+
+### 1. 安装依赖
+
+```bash
+cd backend
+pip install -r requirements.txt
+```
+
+### 2. 配置环境变量
+
+```bash
+cp .env.example .env
+# 编辑 .env 文件配置数据库等信息
+```
+
+### 3. 初始化数据库
+
+```bash
+python -m app.db.init_db
+```
+
+### 4. 启动服务
+
+```bash
+# 开发模式
+uvicorn app.main:app --reload --port 8000
+
+# 生产模式
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+## API 文档
+
+启动服务后访问：
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+详细接口规范请参考: [BACKEND_API_SPEC.md](../docs/BACKEND_API_SPEC.md)
 
 ## 需要实现的接口
 
