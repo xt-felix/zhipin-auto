@@ -64,12 +64,14 @@ git submodule update --init --recursive
 
 本项目采用 [MIT License](LICENSE) 开源协议。
 
-基于原项目 [GoodHR AI JS](https://gitee.com/xxooxx8/good-hr-ai-js) v2.8.1 版本二次开发，原项目同样采用 MIT 许可证。
+本项目基于原项目 [GoodHR AI JS](https://gitee.com/xxooxx8/good-hr-ai-js) v2.8.1 版本进行二次开发。原项目同样采用MIT许可证，详情请参阅原项目仓库。
 
 ## 致谢
 
-- [GoodHR AI JS](https://gitee.com/xxooxx8/good-hr-ai-js) - 原项目
-- [FingerprintJS](https://github.com/fingerprintjs/fingerprintjs) - 设备指纹识别
+感谢原项目 [GoodHR AI JS](https://gitee.com/xxooxx8/good-hr-ai-js) 提供的优秀基础。
+
+感谢以下开源项目：
+- [FingerprintJS](https://github.com/fingerprintjs/fingerprintjs) - 设备指纹识别技术
 - [Chrome Extensions Samples](https://github.com/GoogleChrome/chrome-extensions-samples) - 扩展开发参考
 
 ---
