@@ -8,12 +8,15 @@
 SmartHR-Assistant/
 ├── frontend/          # Chrome 浏览器扩展（前端）
 │   ├── manifest.json
+│   ├── config.js      # 配置文件（API地址等）
 │   ├── popup/
 │   ├── content_scripts/
 │   └── background.js
 ├── backend/           # 后端 API 服务
 ├── docs/              # 项目文档
 │   └── BACKEND_API_SPEC.md
+├── TODO-frontend.md   # 前端开发进度
+├── TODO-backend.md    # 后端开发计划
 ├── README.md
 └── LICENSE
 ```
@@ -31,6 +34,7 @@ SmartHR-Assistant/
 | AI 智能筛选（高级版） | 调用 AI API 判断候选人匹配度 | ✅ |
 | 自动打招呼 | 对匹配的候选人自动发送问候 | ✅ |
 | 设备指纹识别 | 使用 FingerprintJS 生成设备唯一标识 | ✅ |
+| 拖拽提示框 | 页面加载时显示确认框，可拖拽移动 | ✅ |
 
 #### 配置功能
 | 功能 | 说明 | 状态 |
@@ -48,26 +52,48 @@ SmartHR-Assistant/
 | 提示音 | 匹配成功时播放提示音 | ✅ |
 | 可视化高亮 | 处理中/已打招呼/未打招呼 不同颜色标记 | ✅ |
 | AI 决策动画 | AI 思考时显示动画提示 | ✅ |
-| 广告展示 | 支持可拖拽的页面广告 | ✅ |
-| 打赏排行榜 | 展示打赏用户列表 | ✅ |
+| 使用统计 | 统计打招呼次数 | ✅ |
+
+#### 已屏蔽功能（代码保留，可随时启用）
+| 功能 | 说明 | 状态 |
+|------|------|------|
+| 广告系统 | 页面广告展示 | 🔒 已屏蔽 |
+| 打赏排行榜 | 打赏用户列表 | 🔒 已屏蔽 |
+| 版本检查 | 自动检查更新 | 🔒 已屏蔽 |
 
 ### 后端（API 服务）- 待开发
 
-| 功能 | 状态 |
-|------|------|
-| 用户配置云同步 | ❌ 待开发 |
-| AI 试用期管理 | ❌ 待开发 |
-| 设备指纹绑定检查 | ❌ 待开发 |
-| 版本检查与公告 | ❌ 待开发 |
-| 广告配置 | ❌ 待开发 |
-| 打赏排行榜 | ❌ 待开发 |
-| 使用统计 | ❌ 待开发 |
+| 功能 | API | 优先级 | 状态 |
+|------|-----|--------|------|
+| 用户配置-获取 | `/getjson.php` | P0 | ⏳ |
+| 用户配置-保存 | `/updatejson.php` | P0 | ⏳ |
+| AI 试用期管理 | `/checkaitrial.php` | P0 | ⏳ |
+| 设备指纹检查 | `/checkfingerprint.php` | P0 | ⏳ |
+| 使用统计 | `/counter.php` | P1 | ⏳ |
+
+详细后端开发计划：[TODO-backend.md](TODO-backend.md)
 
 ### 当前可用状态
 
 - **免费版功能**：完全可用（纯前端，无需后端）
 - **AI 高级版**：部分可用（AI 筛选可用，试用期/付费管理需后端）
 - **云同步功能**：不可用（需要后端支持）
+
+## 前端安装方法
+
+1. 打开 Chrome 浏览器，进入 `chrome://extensions/`
+2. 开启「开发者模式」
+3. 点击「加载已解压的扩展程序」
+4. 选择 `frontend` 目录
+
+## 配置说明
+
+### 修改 API 地址
+
+编辑 `frontend/config.js`：
+```javascript
+API_BASE: 'https://你的服务器地址',
+```
 
 ## 未来规划
 
@@ -88,18 +114,11 @@ SmartHR-Assistant/
 2. **第二阶段**：扩展到猎聘、智联等其他平台
 3. **第三阶段**：结合后端实现更智能的对话管理
 
-## 前端安装方法
+## 开发文档
 
-1. 打开 Chrome 浏览器，进入 `chrome://extensions/`
-2. 开启「开发者模式」
-3. 点击「加载已解压的扩展程序」
-4. 选择 `frontend` 目录
-
-## 后端 (API Server)
-
-后端服务在 `backend/` 目录中开发，技术栈待定。
-
-详细接口规范：[docs/BACKEND_API_SPEC.md](docs/BACKEND_API_SPEC.md)
+- [前端开发进度](TODO-frontend.md)
+- [后端开发计划](TODO-backend.md)
+- [后端 API 规范](docs/BACKEND_API_SPEC.md)
 
 ## 开发者
 
