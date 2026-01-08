@@ -59,10 +59,11 @@
 |------|------|------|------|
 | popup/index.js | 931-932 行 | `loadAdConfig()` 和 `displayAds()` 调用已注释 | ✅ 已屏蔽 |
 | content_scripts/index.js | 851-863 行 | `SHOW_ADS` 和 `REMOVE_ADS` 消息处理已简化 | ✅ 已屏蔽 |
-| popup/index.js | 61 行 | 广告配置变量 `adConfig` | 保留代码 |
-| popup/index.js | 2605-2763 行 | 广告加载、显示、创建函数 | 保留代码 |
-| content_scripts/index.js | 997-1013 行 | `removeAds()` 函数 | 保留代码 |
-| content_scripts/index.js | 1722-2031 行 | 广告系统全部代码 | 保留代码 |
+| content_scripts/index.js | 1608 行 | `loadAdConfig()` 调用已注释 | ✅ 已屏蔽 |
+| popup/index.js | 61 行 | 广告配置变量 `adConfig` | 保留代码(未使用) |
+| popup/index.js | 2605-2763 行 | 广告加载、显示、创建函数 | 保留代码(未调用) |
+| content_scripts/index.js | 950-1013 行 | `removeAds()` 函数 | 保留代码(未调用) |
+| content_scripts/index.js | 1679-1971 行 | 广告系统全部代码 | 保留代码(未调用) |
 | **API** | `/ads.json` | 广告配置接口 | 暂不删除 |
 
 #### ✅ 打赏排行榜（已屏蔽）

@@ -1603,9 +1603,9 @@ function createDraggablePrompt() {
 try {
     // 检查是否在iframe中
     const isInIframe = window !== window.top;
-    
-    // 只加载广告配置，不在这里显示广告
-    loadAdConfig();
+
+    // 广告功能已屏蔽
+    // loadAdConfig();
 
     initializeParser().then(() => {
         // createDraggablePrompt();
