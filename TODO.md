@@ -111,9 +111,10 @@
 
 | 文件 | 内容 | 状态 |
 |------|------|------|
-| popup/index.html | 排行榜容器 `ranking-list` | ⏳ |
-| popup/index.html | 广告相关元素 | ⏳ |
-| popup/index.html | 版本检查相关 UI | ⏳ |
+| popup/index.html | "基于 GoodHR 二次开发" 文案 | ✅ 已移除 |
+| popup/index.html | 打赏记录区块 (免费版+AI版) | ✅ 已移除 |
+| popup/index.html | 底部链接 (联系我/打赏我/前往官网/分享给另一个HR) | ✅ 已移除 |
+| popup/index.html | 排行榜容器 `ranking-list` | ✅ 已移除 |
 
 ### 3.2 文档更新
 
@@ -168,7 +169,7 @@
 | 3 | 屏蔽版本检查 | `git commit -m "refactor: 暂时屏蔽版本检查功能"` | ✅ |
 | 4 | 移除使用统计 | `git commit -m "refactor: 移除使用统计"` | ⏳ |
 | 5 | 移除拖拽提示框 | `git commit -m "refactor: 移除拖拽提示框"` | ⏳ |
-| 6 | 清理 HTML | `git commit -m "refactor: 清理HTML冗余元素"` | ⏳ |
+| 6 | 清理 HTML 冗余文案 | `git commit -m "refactor: 清理HTML冗余文案和链接"` | ✅ |
 | 7 | 更新文档 | `git commit -m "docs: 更新API文档"` | ⏳ |
 | 8 | 测试通过 | `git commit -m "test: 核心功能测试通过"` | ⏳ |
 
