@@ -2,151 +2,141 @@
 
 > 分支: `feature/core-enhancements`
 > 创建时间: 2025-01-07
+> 最后更新: 2025-01-08
 
 ---
 
 ## 📋 任务总览
 
-| 类型 | 数量 | 说明 |
-|------|------|------|
-| 🔧 需要开发 | 5 项 | 后端API、前端优化 |
-| 🗑️ 需要删除 | 5 项 | 非核心功能精简 |
-| 📝 需要更新 | 2 项 | 文档、HTML |
-| ✅ 测试验证 | 6 项 | 确保核心功能正常 |
+| 类型 | 已完成 | 待处理 | 说明 |
+|------|--------|--------|------|
+| 🗑️ 功能屏蔽 | 4 项 | 1 项 | 广告、排行榜、版本检查、HTML清理 |
+| 🔧 需要开发 | 0 项 | 5 项 | 后端API、前端优化 |
+| 📝 文档更新 | 0 项 | 1 项 | API文档 |
 
 ---
 
-## 🔧 一、需要开发的功能
+## ✅ 一、已完成的修改
 
-### 1.1 后端 API 服务（P0 - 必须）
+### 1.1 功能屏蔽（代码保留，入口注释）
 
-| 功能 | API | 说明 | 状态 |
-|------|-----|------|------|
-| 用户配置-获取 | `GET /getjson.php` | 根据手机号获取云端配置 | ⏳ |
-| 用户配置-保存 | `POST /updatejson.php` | 保存配置到云端 | ⏳ |
-| AI试用期-检查 | `GET /checkaitrial.php` | 检查设备试用期状态 | ⏳ |
-| AI试用期-记录 | `POST /checkaitrial.php` | 记录新设备，赠送3天试用 | ⏳ |
-| 设备绑定检查 | `GET /checkfingerprint.php` | 检查设备与手机号绑定关系 | ⏳ |
+#### ✅ 广告系统
+| 文件 | 位置 | 修改内容 |
+|------|------|----------|
+| popup/index.js | 931-932 行 | `loadAdConfig()` 和 `displayAds()` 调用已注释 |
+| content_scripts/index.js | 851-863 行 | `SHOW_ADS` 和 `REMOVE_ADS` 消息处理已简化 |
+| content_scripts/index.js | 1608 行 | `loadAdConfig()` 调用已注释 |
 
-**数据库表:**
-- `users` - 用户配置表
-- `device_fingerprints` - 设备指纹表
+**保留的死代码（未调用）：**
+- popup/index.js: 61行 `adConfig` 变量、2605-2763行 广告函数
+- content_scripts/index.js: 950-1013行 `removeAds()`、1679-1971行 广告系统代码
 
-### 1.2 前端功能完善（P1 - 重要）
+#### ✅ 打赏排行榜
+| 文件 | 位置 | 修改内容 |
+|------|------|----------|
+| popup/index.js | 928 行 | `loadRankingData()` 调用已注释 |
 
-| 功能 | 说明 | 状态 |
-|------|------|------|
-| 修改 API 地址 | `config.js` 中 `API_BASE` 指向自己的后端 | ⏳ |
-| 无后端降级 | 确保无后端时免费版可正常使用 | ⏳ |
-| AI 平台扩展 | 支持更多 AI 平台（不仅限于 SiliconFlow） | ⏳ |
+**保留的死代码（未调用）：**
+- popup/index.js: 1690-1742行 排行榜函数
+- background.js: 45-55行 `fetchRankingData()`、77-86行 `GET_RANKING` 消息处理
 
-### 1.3 未来规划（P2 - 可选）
+#### ✅ 版本检查
+| 文件 | 位置 | 修改内容 |
+|------|------|----------|
+| popup/index.js | 1422 行 | `checkForUpdates()` 调用已注释 |
 
-| 功能 | 说明 | 状态 |
-|------|------|------|
-| AI 智能聊天 | 自动与候选人对话 | 📅 规划中 |
-| - 第一阶段 | Boss直聘 | 📅 |
-| - 第二阶段 | 猎聘、智联等 | 📅 |
+**保留的死代码（未调用）：**
+- popup/index.js: 1378-1421行 版本检查函数
+
+### 1.2 HTML 清理
+| 文件 | 移除内容 |
+|------|----------|
+| popup/index.html | "基于 GoodHR 二次开发" 文案 |
+| popup/index.html | 打赏记录区块 (免费版+AI版) |
+| popup/index.html | 底部链接 (联系我/打赏我/前往官网/分享给另一个HR) |
 
 ---
 
-## 🗑️ 二、需要删除的功能
+## ⏳ 二、待处理任务
 
-### 2.1 高优先级（强烈建议删除）
-
-#### ✅ 广告系统（已屏蔽）
-| 文件 | 位置 | 内容 | 状态 |
-|------|------|------|------|
-| popup/index.js | 931-932 行 | `loadAdConfig()` 和 `displayAds()` 调用已注释 | ✅ 已屏蔽 |
-| content_scripts/index.js | 851-863 行 | `SHOW_ADS` 和 `REMOVE_ADS` 消息处理已简化 | ✅ 已屏蔽 |
-| content_scripts/index.js | 1608 行 | `loadAdConfig()` 调用已注释 | ✅ 已屏蔽 |
-| popup/index.js | 61 行 | 广告配置变量 `adConfig` | 保留代码(未使用) |
-| popup/index.js | 2605-2763 行 | 广告加载、显示、创建函数 | 保留代码(未调用) |
-| content_scripts/index.js | 950-1013 行 | `removeAds()` 函数 | 保留代码(未调用) |
-| content_scripts/index.js | 1679-1971 行 | 广告系统全部代码 | 保留代码(未调用) |
-| **API** | `/ads.json` | 广告配置接口 | 暂不删除 |
-
-#### ✅ 打赏排行榜（已屏蔽）
-| 文件 | 位置 | 内容 | 状态 |
-|------|------|------|------|
-| popup/index.js | 928 行 | `loadRankingData()` 调用已注释 | ✅ 已屏蔽 |
-| popup/index.js | 1690-1742 行 | `loadRankingData()`, `fetchRankingData()`, `renderRankingList()` | 保留代码 |
-| background.js | 45-55 行 | `fetchRankingData()` 函数 | 保留代码 |
-| background.js | 77-86 行 | `GET_RANKING` 消息处理 | 保留代码 |
-| **API** | `/dashang.json` | 打赏排行榜接口 | 暂不删除 |
-
-#### ✅ 版本检查功能（已屏蔽）
-| 文件 | 位置 | 内容 | 状态 |
-|------|------|------|------|
-| popup/index.js | 1422 行 | `checkForUpdates()` 调用已注释 | ✅ 已屏蔽 |
-| popup/index.js | 1378-1421 行 | `checkForUpdates()`, `checkVersion()` 函数 | 保留代码 |
-| **API** | `/v.json` | 版本检查接口 | 暂不删除 |
-
-### 2.2 中优先级
-
-#### ❌ 使用统计
-| 文件 | 位置 | 内容 |
-|------|------|------|
-| content_scripts/index.js | 496-504 行 | `counter.php` 调用 |
-| **删除 API** | `/counter.php` | - |
-
-#### ❌ 拖拽提示框
+### 2.1 拖拽提示框（可选屏蔽）
 | 文件 | 位置 | 内容 |
 |------|------|------|
 | content_scripts/index.js | 1484-1648 行 | `createDraggablePrompt()` 函数 |
-| content_scripts/index.js | 1659 行 | 初始化调用 |
+| content_scripts/index.js | 1611 行 | 初始化调用（已注释） |
 
-### 2.3 低优先级（可选）
-
-#### ⚪ 设备指纹显示优化
-| 文件 | 位置 | 内容 |
-|------|------|------|
-| popup/index.js | 387-447 行 | 指纹显示 UI |
-| popup/index.js | 459-479 行 | 刷新按钮事件 |
+### 2.2 修改 API 地址
+| 文件 | 配置项 | 当前值 | 说明 |
+|------|--------|--------|------|
+| config.js | `API_BASE` | `https://goodhr.58it.cn` | 需改为自己的服务器地址 |
 
 ---
 
-## 📝 三、需要清理/更新
+## 🔧 三、需要开发的后端 API
 
-### 3.1 HTML 清理
+### 3.1 核心 API（P0 - 必须）
+| API | 方法 | 说明 | 状态 |
+|-----|------|------|------|
+| `/getjson.php` | GET | 根据手机号获取云端配置 | ⏳ |
+| `/updatejson.php` | POST | 保存配置到云端 | ⏳ |
+| `/checkaitrial.php` | GET/POST | AI试用期检查/记录 | ⏳ |
+| `/checkfingerprint.php` | GET | 设备与手机号绑定检查 | ⏳ |
+| `/counter.php` | GET | 使用统计（每次打招呼+1） | ⏳ |
 
-| 文件 | 内容 | 状态 |
-|------|------|------|
-| popup/index.html | "基于 GoodHR 二次开发" 文案 | ✅ 已移除 |
-| popup/index.html | 打赏记录区块 (免费版+AI版) | ✅ 已移除 |
-| popup/index.html | 底部链接 (联系我/打赏我/前往官网/分享给另一个HR) | ✅ 已移除 |
-| popup/index.html | 排行榜容器 `ranking-list` | ✅ 已移除 |
-
-### 3.2 文档更新
-
-| 文件 | 内容 | 状态 |
-|------|------|------|
-| docs/BACKEND_API_SPEC.md | 移除 `/ads.json` | ⏳ |
-| docs/BACKEND_API_SPEC.md | 移除 `/dashang.json` | ⏳ |
-| docs/BACKEND_API_SPEC.md | 移除 `/v.json` | ⏳ |
-| docs/BACKEND_API_SPEC.md | 移除 `/counter.php` | ⏳ |
-| backend/README.md | 同步更新接口列表 | ⏳ |
+### 3.2 数据库表设计
+- `users` - 用户配置表
+- `device_fingerprints` - 设备指纹表
+- `usage_stats` - 使用统计表（counter.php 用）
 
 ---
 
-## ✅ 四、保留的核心功能
+## 📦 四、Git 提交记录
 
-确保以下功能正常工作：
+| # | 提交内容 | Commit | 状态 |
+|---|---------|--------|------|
+| 1 | 屏蔽版本检查 | `8f9cf46` | ✅ |
+| 2 | 屏蔽广告系统 | `372d83e` | ✅ |
+| 3 | 屏蔽打赏排行榜 | `962c6ba` | ✅ |
+| 4 | 清理 HTML 冗余文案 | `512a34f` | ✅ |
+| 5 | 补充屏蔽广告加载 | `654aee4` | ✅ |
+
+---
+
+## 📊 五、API 状态汇总
+
+### 已屏蔽的 API（3个，代码保留但不调用）
+| API | 原功能 | 状态 |
+|-----|--------|------|
+| `/ads.json` | 广告配置 | 已屏蔽 |
+| `/dashang.json` | 打赏排行榜 | 已屏蔽 |
+| `/v.json` | 版本检查 | 已屏蔽 |
+
+### 需要开发的 API（5个）
+| API | 功能 | 优先级 |
+|-----|------|--------|
+| `/getjson.php` | 获取用户配置 | P0 |
+| `/updatejson.php` | 更新用户配置 | P0 |
+| `/checkaitrial.php` | AI 试用期管理 | P0 |
+| `/checkfingerprint.php` | 设备指纹检查 | P0 |
+| `/counter.php` | 使用统计 | P1 |
+
+---
+
+## ✅ 六、保留的核心功能
 
 | 功能 | 说明 | 状态 |
 |------|------|------|
-| 用户配置管理 | 本地存储 + 云同步预留 | ✅ 已有 |
-| AI 智能筛选 | 调用 SiliconFlow API | ✅ 已有 |
-| 关键词筛选 | 免费版功能 | ✅ 已有 |
-| 自动打招呼 | 匹配后自动沟通 | ✅ 已有 |
-| 多平台支持 | Boss、猎聘、智联、58、拉勾 | ✅ 已有 |
-| 设备指纹识别 | FingerprintJS | ✅ 已有 |
+| 用户配置管理 | 本地存储 + 云同步预留 | ✅ 正常 |
+| AI 智能筛选 | 调用 SiliconFlow API | ✅ 正常 |
+| 关键词筛选 | 免费版功能 | ✅ 正常 |
+| 自动打招呼 | 匹配后自动沟通 | ✅ 正常 |
+| 多平台支持 | Boss、猎聘、智联、58、拉勾 | ✅ 正常 |
+| 设备指纹识别 | FingerprintJS | ✅ 正常 |
+| 使用统计 | counter.php 统计打招呼次数 | ✅ 保留 |
 
 ---
 
-## 🧪 五、测试清单
-
-完成开发后，逐项测试：
+## 🧪 七、测试清单
 
 | 测试项 | 说明 | 状态 |
 |--------|------|------|
@@ -159,44 +149,11 @@
 
 ---
 
-## 📦 六、提交计划
+## 📅 八、未来规划
 
-按顺序执行，每完成一项提交一次：
-
-| # | 提交内容 | 命令示例 | 状态 |
-|---|---------|---------|------|
-| 1 | 屏蔽广告系统 | `git commit -m "refactor: 暂时屏蔽广告系统"` | ✅ |
-| 2 | 屏蔽打赏排行榜 | `git commit -m "refactor: 暂时屏蔽打赏排行榜"` | ✅ |
-| 3 | 屏蔽版本检查 | `git commit -m "refactor: 暂时屏蔽版本检查功能"` | ✅ |
-| 4 | 移除使用统计 | `git commit -m "refactor: 移除使用统计"` | ⏳ |
-| 5 | 移除拖拽提示框 | `git commit -m "refactor: 移除拖拽提示框"` | ⏳ |
-| 6 | 清理 HTML 冗余文案 | `git commit -m "refactor: 清理HTML冗余文案和链接"` | ✅ |
-| 7 | 更新文档 | `git commit -m "docs: 更新API文档"` | ⏳ |
-| 8 | 测试通过 | `git commit -m "test: 核心功能测试通过"` | ⏳ |
-
-**完成后合并到 main:**
-```bash
-git checkout main
-git merge feature/core-enhancements
-git push origin main
-```
-
----
-
-## 📊 API 变更汇总
-
-### 删除的 API（4个）
-| API | 原功能 |
-|-----|--------|
-| `/ads.json` | 广告配置 |
-| `/dashang.json` | 打赏排行榜 |
-| `/v.json` | 版本检查 |
-| `/counter.php` | 使用统计 |
-
-### 保留的 API（4个）
-| API | 功能 | 优先级 |
-|-----|------|--------|
-| `/getjson.php` | 获取用户配置 | P0 |
-| `/updatejson.php` | 更新用户配置 | P0 |
-| `/checkaitrial.php` | AI 试用期管理 | P0 |
-| `/checkfingerprint.php` | 设备指纹检查 | P0 |
+| 功能 | 说明 | 状态 |
+|------|------|------|
+| AI 智能聊天 | 自动与候选人对话 | 📅 规划中 |
+| - 第一阶段 | Boss直聘 | 📅 |
+| - 第二阶段 | 猎聘、智联等 | 📅 |
+| AI 平台扩展 | 支持更多 AI 平台 | 📅 规划中 |
