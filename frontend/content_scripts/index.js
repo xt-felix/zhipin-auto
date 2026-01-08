@@ -848,66 +848,18 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                 await startAutoScroll();
                 sendResponse({ status: 'success' });
                                 break;
+            // 广告功能暂时屏蔽
             case 'SHOW_ADS':
-
-            console.log('收到显示广告消息:', message);
-            
-                // 检查广告配置是否已加载
-                if (adConfig) {
-                    // 检查AI是否过期
-                    chrome.storage.local.get(['ai_expire_time'], function(result) {
-                        let isAIExpired = true;
-                        if (result.ai_expire_time) {
-
-                            const now = new Date();
-                            let expireDate = null;
-                            try {
-                                 expireDate = new Date(result.ai_expire_time + 'T00:00:00');
-                                if (now > expireDate) {
-                                    isAIExpired = true;
-                                }
-                            } catch (error) {
-                                console.error('解析AI到期时间失败:', error);
-                                sendResponse({ status: 'error', message: '解析AI到期时间失败' });
-                                isAIExpired = true;
-                            }     
-                           
-
-                        }
-                        
-                        // 广告显示条件：AI未过期（或无到期时间）
-                        // const shouldShowAd = vip_show|| ;
-                        
-                        // if (isAIExpired ) {
-                            // 显示广告
-                            displayAds(isAIExpired);
-                            // 标记广告已显示
-                            chrome.storage.local.set({adDisplayed: true});
-                        // }
-                        sendResponse({ status: 'success' });
-                    });
-                } else {
-                    sendResponse({ status: 'error', message: '广告配置未加载' });
-                }
-                return true; // 异步发送响应
-
-                enableSound = currentParser.aiSettings.enableSound
-
-
-                // console.log('设置AI模式:', {
-                //     aiMode: currentParser.aiMode,
-                //     aiSettings: currentParser.aiSettings
-                // });
-
+                console.log('广告功能已屏蔽');
+                sendResponse({ status: 'disabled', message: '广告功能已屏蔽' });
                 break;
             case 'STOP_SCROLL':
                 stopAutoScroll();
                 sendResponse({ status: 'stopped' });
                 break;
             case 'REMOVE_ADS':
-                // 移除所有广告元素
-                removeAds();
-                sendResponse({ status: 'success' });
+                console.log('广告功能已屏蔽');
+                sendResponse({ status: 'disabled', message: '广告功能已屏蔽' });
                 break;
             case 'UPDATE_KEYWORDS':
                 if (currentParser) {

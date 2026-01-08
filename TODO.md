@@ -54,17 +54,16 @@
 
 ### 2.1 高优先级（强烈建议删除）
 
-#### ❌ 广告系统
-| 文件 | 位置 | 内容 |
-|------|------|------|
-| popup/index.js | 61 行 | 广告配置变量 `adConfig` |
-| popup/index.js | 931 行 | 初始化广告调用 |
-| popup/index.js | 2605-2763 行 | 广告加载、显示、创建函数 |
-| content_scripts/index.js | 851-892 行 | 广告显示消息处理 `SHOW_ADS` |
-| content_scripts/index.js | 907-913 行 | 广告移除消息处理 `REMOVE_ADS` |
-| content_scripts/index.js | 997-1013 行 | `removeAds()` 函数 |
-| content_scripts/index.js | 1722-2031 行 | 广告系统全部代码 |
-| **删除 API** | `/ads.json` | - |
+#### ✅ 广告系统（已屏蔽）
+| 文件 | 位置 | 内容 | 状态 |
+|------|------|------|------|
+| popup/index.js | 931-932 行 | `loadAdConfig()` 和 `displayAds()` 调用已注释 | ✅ 已屏蔽 |
+| content_scripts/index.js | 851-863 行 | `SHOW_ADS` 和 `REMOVE_ADS` 消息处理已简化 | ✅ 已屏蔽 |
+| popup/index.js | 61 行 | 广告配置变量 `adConfig` | 保留代码 |
+| popup/index.js | 2605-2763 行 | 广告加载、显示、创建函数 | 保留代码 |
+| content_scripts/index.js | 997-1013 行 | `removeAds()` 函数 | 保留代码 |
+| content_scripts/index.js | 1722-2031 行 | 广告系统全部代码 | 保留代码 |
+| **API** | `/ads.json` | 广告配置接口 | 暂不删除 |
 
 #### ❌ 打赏排行榜
 | 文件 | 位置 | 内容 |
@@ -164,7 +163,7 @@
 
 | # | 提交内容 | 命令示例 | 状态 |
 |---|---------|---------|------|
-| 1 | 移除广告系统 | `git commit -m "refactor: 移除广告系统"` | ⏳ |
+| 1 | 屏蔽广告系统 | `git commit -m "refactor: 暂时屏蔽广告系统"` | ✅ |
 | 2 | 移除打赏排行榜 | `git commit -m "refactor: 移除打赏排行榜"` | ⏳ |
 | 3 | 屏蔽版本检查 | `git commit -m "refactor: 暂时屏蔽版本检查功能"` | ✅ |
 | 4 | 移除使用统计 | `git commit -m "refactor: 移除使用统计"` | ⏳ |

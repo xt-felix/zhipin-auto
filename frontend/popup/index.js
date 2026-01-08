@@ -927,9 +927,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 		// 获取并显示排行榜数据
 		await loadRankingData();
 
-		// 加载并显示广告
-		await loadAdConfig();
-		displayAds();
+		// 加载并显示广告（暂时屏蔽）
+		// await loadAdConfig();
+		// displayAds();
 	} catch (error) {
 		showError(error);
 	}
