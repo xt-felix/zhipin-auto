@@ -75,11 +75,12 @@
 | background.js | 77-86 行 | `GET_RANKING` 消息处理 |
 | **删除 API** | `/dashang.json` | - |
 
-#### ❌ 版本检查功能
-| 文件 | 位置 | 内容 |
-|------|------|------|
-| popup/index.js | 1378-1422 行 | `checkForUpdates()`, `checkVersion()` 函数 |
-| **删除 API** | `/v.json` | - |
+#### ✅ 版本检查功能（已屏蔽）
+| 文件 | 位置 | 内容 | 状态 |
+|------|------|------|------|
+| popup/index.js | 1422 行 | `checkForUpdates()` 调用已注释 | ✅ 已屏蔽 |
+| popup/index.js | 1378-1421 行 | `checkForUpdates()`, `checkVersion()` 函数 | 保留代码 |
+| **API** | `/v.json` | 版本检查接口 | 暂不删除 |
 
 ### 2.2 中优先级
 
@@ -165,7 +166,7 @@
 |---|---------|---------|------|
 | 1 | 移除广告系统 | `git commit -m "refactor: 移除广告系统"` | ⏳ |
 | 2 | 移除打赏排行榜 | `git commit -m "refactor: 移除打赏排行榜"` | ⏳ |
-| 3 | 移除版本检查 | `git commit -m "refactor: 移除版本检查功能"` | ⏳ |
+| 3 | 屏蔽版本检查 | `git commit -m "refactor: 暂时屏蔽版本检查功能"` | ✅ |
 | 4 | 移除使用统计 | `git commit -m "refactor: 移除使用统计"` | ⏳ |
 | 5 | 移除拖拽提示框 | `git commit -m "refactor: 移除拖拽提示框"` | ⏳ |
 | 6 | 清理 HTML | `git commit -m "refactor: 清理HTML冗余元素"` | ⏳ |

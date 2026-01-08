@@ -1419,7 +1419,7 @@ async function checkForUpdates() {
 		alert(GONGGAO);
 	}
 }
-checkForUpdates();
+// checkForUpdates(); // 暂时屏蔽版本检查，后续需要时取消注释
 
 // 添加职位相关函数
 function addPosition() {
