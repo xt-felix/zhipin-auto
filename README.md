@@ -13,8 +13,8 @@ SmartHR-Assistant/
 │   ├── content_scripts/
 │   └── background.js
 ├── backend/           # 后端 API 服务
-├── docs/              # 项目文档
-│   └── BACKEND_API_SPEC.md
+│   ├── API_SPEC.md    # API 接口规范
+│   └── PYTHON_EXAMPLE.md  # Python 开发示例
 ├── TODO-frontend.md   # 前端开发进度
 ├── TODO-backend.md    # 后端开发计划
 ├── README.md
@@ -118,7 +118,8 @@ API_BASE: 'https://你的服务器地址',
 
 - [前端开发进度](TODO-frontend.md)
 - [后端开发计划](TODO-backend.md)
-- [后端 API 规范](docs/BACKEND_API_SPEC.md)
+- [后端 API 规范](backend/API_SPEC.md)
+- [Python 开发示例](backend/PYTHON_EXAMPLE.md)
 
 ## 开发者
 
