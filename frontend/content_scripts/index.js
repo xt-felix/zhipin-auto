@@ -1434,7 +1434,6 @@ async function sendMessage(message) {
 }
 
 function createDraggablePrompt() {
-    return
     // 如果已经存在询问框，先移除它
     if (currentPrompt) {
         currentPrompt.remove();
@@ -1458,13 +1457,13 @@ function createDraggablePrompt() {
     prompt.innerHTML = `
         <div style='cursor: move; display: flex; justify-content: space-between; align-items: center;'>
             <div style='display: flex; align-items: center;'>
-                <strong style='color: #1a73e8; margin-right: 5px; font-size: 16px;'>GoodHR 插件</strong>
+                <strong style='color: #1a73e8; margin-right: 5px; font-size: 16px;'>SmartHR Assistant</strong>
                 <span style='background-color: #e8f0fe; color: #1a73e8; padding: 2px 6px; border-radius: 10px; font-size: 12px;'>v${window.GOODHR_CONFIG ? window.GOODHR_CONFIG.VERSION : chrome.runtime.getManifest().version}</span>
             </div>
             <span style='font-size: 12px; color: #999;'>拖动</span>
         </div>
         <div style='margin-top: 15px; text-align: center;'>
-            <div style='margin-bottom: 15px; font-size: 14px;'>是否打开 GoodHR 插件？</div>
+            <div style='margin-bottom: 15px; font-size: 14px;'>是否打开 SmartHR 插件？</div>
             <div>
                 <button id='open-plugin' style='
                     padding: 5px 20px;
@@ -1608,7 +1607,7 @@ try {
     // loadAdConfig();
 
     initializeParser().then(() => {
-        // createDraggablePrompt();
+        createDraggablePrompt();
     });
 } catch (error) {
     console.error('初始化失败:', error);
