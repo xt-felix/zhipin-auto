@@ -17,7 +17,7 @@
 
 ### 1.1 核心 API（P0 - 必须）
 
-#### `/getjson.php` - 获取用户配置
+#### `/getjson` - 获取用户配置
 | 项目 | 说明 |
 |------|------|
 | 方法 | GET |
@@ -25,7 +25,7 @@
 | 返回 | 用户的云端配置 JSON |
 | 状态 | ⏳ 待开发 |
 
-#### `/updatejson.php` - 保存用户配置
+#### `/updatejson` - 保存用户配置
 | 项目 | 说明 |
 |------|------|
 | 方法 | POST |
@@ -33,7 +33,7 @@
 | 返回 | 保存结果 |
 | 状态 | ⏳ 待开发 |
 
-#### `/checkaitrial.php` - AI试用期管理
+#### `/checkaitrial` - AI试用期管理
 | 项目 | 说明 |
 |------|------|
 | 方法 | GET/POST |
@@ -41,7 +41,7 @@
 | 功能 | GET检查试用状态，POST记录新设备并赠送3天试用 |
 | 状态 | ⏳ 待开发 |
 
-#### `/checkfingerprint.php` - 设备指纹检查
+#### `/checkfingerprint` - 设备指纹检查
 | 项目 | 说明 |
 |------|------|
 | 方法 | GET |
@@ -51,7 +51,7 @@
 
 ### 1.2 统计 API（P1 - 重要）
 
-#### `/counter.php` - 使用统计
+#### `/counter` - 使用统计
 | 项目 | 说明 |
 |------|------|
 | 方法 | GET |
@@ -104,11 +104,11 @@ CREATE TABLE usage_stats (
 ### 需要开发的 API（5个）
 | API | 功能 | 优先级 | 状态 |
 |-----|------|--------|------|
-| `/getjson.php` | 获取用户配置 | P0 | ⏳ |
-| `/updatejson.php` | 更新用户配置 | P0 | ⏳ |
-| `/checkaitrial.php` | AI 试用期管理 | P0 | ⏳ |
-| `/checkfingerprint.php` | 设备指纹检查 | P0 | ⏳ |
-| `/counter.php` | 使用统计 | P1 | ⏳ |
+| `/getjson` | 获取用户配置 | P0 | ⏳ |
+| `/updatejson` | 更新用户配置 | P0 | ⏳ |
+| `/checkaitrial` | AI 试用期管理 | P0 | ⏳ |
+| `/checkfingerprint` | 设备指纹检查 | P0 | ⏳ |
+| `/counter` | 使用统计 | P1 | ⏳ |
 
 ### 已屏蔽的 API（前端不再调用）
 | API | 原功能 | 说明 |
@@ -149,13 +149,13 @@ header('Access-Control-Allow-Headers: Content-Type');
    - 配置服务器环境
 
 2. **第二步：核心功能**
-   - `/counter.php` - 最简单，先验证连通性
-   - `/checkfingerprint.php` - 设备绑定
-   - `/checkaitrial.php` - AI试用期
+   - `/counter` - 最简单，先验证连通性
+   - `/checkfingerprint` - 设备绑定
+   - `/checkaitrial` - AI试用期
 
 3. **第三步：配置同步**
-   - `/getjson.php` - 获取配置
-   - `/updatejson.php` - 保存配置
+   - `/getjson` - 获取配置
+   - `/updatejson` - 保存配置
 
 4. **第四步：测试验证**
    - 修改前端 `API_BASE`
