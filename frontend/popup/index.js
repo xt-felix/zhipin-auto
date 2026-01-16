@@ -1926,27 +1926,24 @@ async function setAIExpireTime() {
 	// 保存设备指纹到服务器
 	if (boundPhone) {
 		try {
-			// 先记录设备指纹
-			const response = await fetch(`${API_BASE}/checkaitrial`, {
+			// 先记录设备指纹（POST请求赠送试用期）
+			const response = await fetch(`${API_BASE}/checkaitrial?fingerprint=${encodeURIComponent(fingerprint)}`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					phone: boundPhone,
-					fingerprint: fingerprint,
-					action: 'record' // 记录设备指纹
-				})
+				}
 			});
 
 			const result = await response.json();
 			if (result.success) {
-				addLog('设备指纹已记录到服务器', 'success');
+				addLog('设备指纹已记录到服务器，已赠送3天试用期', 'success');
 			} else {
-				addLog('记录设备指纹失败: ' + result.message, 'error');
-				// 如果是手机号已绑定其他设备的错误，抛出异常停止执行
-				if (result.message && result.message.includes('此手机号已绑定其他设备')) {
-					throw new Error(result.message);
+				addLog('记录设备指纹失败: ' + (result.error || result.message), 'error');
+				// 如果是设备已有试用期，这不算严重错误
+				if (result.error && result.error.includes('该设备已有试用期')) {
+					addLog('该设备已有试用期，继续使用', 'info');
+				} else if (result.error && result.error.includes('该设备试用期已使用过')) {
+					addLog('该设备试用期已使用过', 'warning');
 				}
 			}
 			
@@ -2050,7 +2047,13 @@ async function syncSettingsFromServer() {
 			throw new Error('获取配置失败');
 		}
 
-		const data = await response.json();
+		const result = await response.json();
+		// Django 后端返回 { success: true, config: {...} }
+		if (!result.success) {
+			throw new Error(result.error || '获取配置失败');
+		}
+
+		const data = result.config;
 		if (data && Object.keys(data).length > 0) {
 			// 使用服务器数据覆盖本地缓存
 			serverData = { ...serverData, ...data };
@@ -2893,30 +2896,48 @@ async function checkAndSetAIExpireTime() {
 /**
  * 更新服务器数据
  */
+let isUpdatingServer = false;  // 防止并发调用的锁
 async function updateServerData() {
 	if (!boundPhone) {
 		throw new Error('未绑定手机号，无法更新服务器数据');
 	}
 
-	const response = await fetch(`${API_BASE}/updatejson?phone=${boundPhone}`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json'
-		},
-		body: JSON.stringify(serverData, null, 2)
-	});
-
-	if (!response.ok) {
-		throw new Error(`服务器响应错误: ${response.status}`);
+	// 如果正在更新，等待上一次更新完成
+	if (isUpdatingServer) {
+		console.log('已有更新请求进行中，等待完成...');
+		// 等待最多5秒
+		let waitCount = 0;
+		while (isUpdatingServer && waitCount < 50) {
+			await new Promise(resolve => setTimeout(resolve, 100));
+			waitCount++;
+		}
+		if (isUpdatingServer) {
+			throw new Error('更新请求超时');
+		}
+		console.log('上一次更新已完成，继续当前更新');
 	}
 
-	const result = await response.json();
-	if (result.status !== 'success') {
-		// 如果服务器返回的消息是"配置已保存"，这实际上是成功的操作
-		if (result.message === '配置已保存') {
-			return; // 成功，不抛出错误
+	isUpdatingServer = true;
+	try {
+		const response = await fetch(`${API_BASE}/updatejson?phone=${boundPhone}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(serverData, null, 2)
+		});
+
+		if (!response.ok) {
+			throw new Error(`服务器响应错误: ${response.status}`);
 		}
-		throw new Error(result.message || '更新服务器数据失败');
+
+		const result = await response.json();
+		// Django 后端返回 { success: true/false }
+		if (!result.success) {
+			throw new Error(result.error || result.message || '更新服务器数据失败');
+		}
+	} finally {
+		isUpdatingServer = false;
 	}
 }
 

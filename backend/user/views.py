@@ -41,9 +41,11 @@ def getjson(request):
     try:
         user = User.objects.get(phone=phone)
         if user.config:
+            # 将 JSON 字符串转换回对象
+            config_obj = json.loads(user.config) if isinstance(user.config, str) else user.config
             return JsonResponse({
                 'success': True,
-                'config': user.config
+                'config': config_obj
             })
         else:
             return JsonResponse({
@@ -62,8 +64,8 @@ def getjson(request):
         })
 
 
-@cors_headers
 @csrf_exempt
+@cors_headers
 @require_http_methods(["POST", "OPTIONS"])
 def updatejson(request):
     """
@@ -73,22 +75,25 @@ def updatejson(request):
     """
     if request.method == 'OPTIONS':
         return JsonResponse({})
-    
+
     phone = request.GET.get('phone', '').strip()
-    
+
     if not phone:
         return JsonResponse({
             'success': False,
             'error': '手机号不能为空'
         })
-    
+
     try:
         config_data = json.loads(request.body)
-        
+
+        # 将配置转为 JSON 字符串存储（因为使用 TextField）
+        config_str = json.dumps(config_data, ensure_ascii=False)
+
         # 使用update_or_create实现UPSERT
         user, created = User.objects.update_or_create(
             phone=phone,
-            defaults={'config': config_data}
+            defaults={'config': config_str}
         )
         
         return JsonResponse({
