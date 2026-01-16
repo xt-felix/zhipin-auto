@@ -6,9 +6,12 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
     console.log('Service Worker 已激活');
-    //测试
-
     event.waitUntil(self.clients.claim());
+});
+
+// 点击扩展图标时打开侧边栏
+chrome.action.onClicked.addListener((tab) => {
+    chrome.sidePanel.open({ windowId: tab.windowId });
 });
 
 // 错误处理
