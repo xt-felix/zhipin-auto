@@ -5,7 +5,7 @@ import json
 class User(models.Model):
     """用户配置表"""
     phone = models.CharField(max_length=20, unique=True, db_index=True, verbose_name='手机号')
-    config = models.JSONField(null=True, blank=True, verbose_name='用户配置')
+    config = models.TextField(null=True, blank=True, verbose_name='用户配置 (JSON字符串)')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
