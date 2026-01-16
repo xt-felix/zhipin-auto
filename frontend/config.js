@@ -1,7 +1,9 @@
 // GoodHR 配置文件
 const CONFIG = {
     // 服务器配置
-    API_BASE: 'https://goodhr.58it.cn',
+    // API_BASE: 'https://goodhr.58it.cn',  // 原 PHP 服务器（已弃用）
+    API_BASE: 'http://127.0.0.1:8000',      // Django 开发服务器
+    // API_BASE: 'https://your-domain.com', // 生产环境（部署时修改）
 
     // 轨迹流动AI配置
     GUJJI_API: {

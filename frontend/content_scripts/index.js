@@ -493,8 +493,8 @@ async function processElement(element, doc) {
 
     try {
         // 发送计数请求到服务器（不等待响应）
-        const apiBase = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'https://goodhr.58it.cn';
-        fetch(`${apiBase}/counter.php`, {
+        const apiBase = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'http://127.0.0.1:8000';
+        fetch(`${apiBase}/counter`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -1675,10 +1675,12 @@ let adConfig = null;
 
 // 在文件中添加广告相关函数
 // 加载广告配置
+// 加载广告配置（已屏蔽功能）
 async function loadAdConfig() {
     try {
+        // 注意：该接口已被屏蔽，不再调用
         // 从服务器加载广告配置，与popup中的实现保持一致
-        const API_BASE = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'https://goodhr.58it.cn';
+        const API_BASE = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'http://127.0.0.1:8000';
         const response = await fetch(`${API_BASE}/ads.json`);
         if (response.ok) {
             adConfig = await response.json();

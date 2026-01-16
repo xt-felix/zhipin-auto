@@ -1375,6 +1375,8 @@ function playNotificationSound() {
 	audio.play().catch(error => console.error('播放提示音失败:', error));
 }
 
+// ========== 版本检查（已屏蔽功能） ==========
+// 注意：该功能已被屏蔽，以下代码保留但不再调用
 const VERSION_API = `${API_BASE}/v.json?t=${Date.now()}`;
 const CURRENT_VERSION = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.VERSION : chrome.runtime.getManifest().version; // 优先使用配置文件中的版本
 let NEW_VERSION = "0";
@@ -1382,6 +1384,7 @@ let GONGGAO = null;
 
 async function checkVersion() {
 	try {
+		// 注意：该接口已被屏蔽，不再调用
 		const response = await fetch(`${VERSION_API}&_=${Date.now()}`);
 		const data = await response.json();
 		NEW_VERSION = data.version;
@@ -1706,9 +1709,10 @@ async function loadRankingData() {
 	}
 }
 
-// 获取打赏排行榜数据
+// 获取打赏排行榜数据（已屏蔽功能）
 async function fetchRankingData() {
 	try {
+		// 注意：该接口已被屏蔽，不再调用
 		const response = await fetch(`${API_BASE}/dashang.json?t=${Date.now()}`);
 		const data = await response.json();
 		return data;
@@ -1923,7 +1927,7 @@ async function setAIExpireTime() {
 	if (boundPhone) {
 		try {
 			// 先记录设备指纹
-			const response = await fetch(`${API_BASE}/checkaitrial.php`, {
+			const response = await fetch(`${API_BASE}/checkaitrial`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -2041,7 +2045,7 @@ async function syncSettingsFromServer() {
 	try {
 		if (!boundPhone) return null;
 
-		const response = await fetch(`${API_BASE}/getjson.php?phone=${boundPhone}`);
+		const response = await fetch(`${API_BASE}/getjson?phone=${boundPhone}`);
 		if (!response.ok) {
 			throw new Error('获取配置失败');
 		}
@@ -2602,10 +2606,11 @@ async function sendDirectAIRequest(prompt) {
 	}
 }
 
-// 广告相关函数
+// ========== 广告相关函数（已屏蔽功能） ==========
 // 加载广告配置
 async function loadAdConfig() {
 	try {
+		// 注意：该接口已被屏蔽，不再调用
 		const response = await fetch(`${API_BASE}/ads.json`);
 		if (response.ok) {
 			adConfig = await response.json();
@@ -2893,7 +2898,7 @@ async function updateServerData() {
 		throw new Error('未绑定手机号，无法更新服务器数据');
 	}
 
-	const response = await fetch(`${API_BASE}/updatejson.php?phone=${boundPhone}`, {
+	const response = await fetch(`${API_BASE}/updatejson?phone=${boundPhone}`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'

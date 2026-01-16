@@ -42,9 +42,10 @@ function startKeepAlive() {
 
 }
 
-// 获取打赏排行榜数据
+// 获取打赏排行榜数据（已屏蔽功能，保留代码）
 async function fetchRankingData() {
     try {
+        // 注意：该接口已被屏蔽，不再调用
         const response = await fetch('https://goodhr.58it.cn/dashang.json');
         const data = await response.json();
         return data;
