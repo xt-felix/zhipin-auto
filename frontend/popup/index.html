@@ -238,7 +238,7 @@
 
 
         .filter-group {
-            padding: 20px;
+            padding: 24px 20px;
             border-bottom: 1px solid #f1f5f9;
             background: white;
             transition: background 0.2s ease;
@@ -250,6 +250,7 @@
 
         .filter-group:last-child {
             border-bottom: none;
+            padding-bottom: 32px;
         }
 
         .filter-group label.title {
@@ -264,13 +265,16 @@
         .keyword-input-group,
         .position-input-group {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 14px;
+            align-items: stretch;
         }
 
         .keyword-input,
         .position-input-group input {
             flex: 1;
+            min-width: 200px;
             padding: 12px 14px;
             border: 2px solid #e2e8f0;
             border-radius: 10px;
@@ -287,7 +291,7 @@
         }
 
         .keyword-btn {
-            padding: 12px 24px;
+            padding: 12px 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
@@ -298,6 +302,7 @@
             transition: all 0.3s ease;
             white-space: nowrap;
             box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            min-width: 80px;
         }
 
         .keyword-btn:hover {
@@ -389,7 +394,8 @@
             gap: 10px;
             font-size: 13px;
             color: #4a5568;
-            padding: 8px 0;
+            padding: 10px 0;
+            min-height: 38px;
         }
 
         .checkbox-wrapper input[type="checkbox"] {
@@ -398,24 +404,26 @@
             margin: 0;
             cursor: pointer;
             accent-color: #667eea;
+            flex-shrink: 0;
         }
 
         .checkbox-label {
             user-select: none;
             cursor: pointer;
             font-weight: 500;
+            line-height: 1.4;
         }
 
         /* 底部控制按钮样式 */
         .control-buttons {
             display: flex;
             gap: 12px;
-            padding: 16px;
+            padding: 20px 16px;
         }
 
         .control-buttons .btn {
             flex: 1;
-            padding: 14px;
+            padding: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -424,8 +432,9 @@
             border-radius: 12px;
             cursor: pointer;
             border: none;
-            font-size: 14px;
+            font-size: 15px;
             transition: all 0.3s ease;
+            min-height: 52px;
         }
 
         .start-btn {
@@ -555,7 +564,7 @@
         }
 
         .bottom-controls {
-            padding: 16px;
+            padding: 20px 16px 16px;
             background: white;
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
         }
@@ -563,6 +572,7 @@
         .initial-buttons {
             display: flex;
             gap: 12px;
+            flex-wrap: wrap;
         }
 
         .btn {
@@ -571,13 +581,15 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            padding: 14px;
+            padding: 16px;
             border: none;
             border-radius: 12px;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
+            min-width: 140px;
+            min-height: 52px;
         }
 
         .primary-btn {
@@ -830,11 +842,11 @@
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             color: #10b981;
             font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-            padding: 12px;
-            height: 120px;
+            padding: 14px;
+            height: 140px;
             overflow-y: auto;
             font-size: 11px;
-            line-height: 1.6;
+            line-height: 1.7;
             border-top: 2px solid #334155;
         }
 
@@ -954,7 +966,7 @@
         }
 
         /* 响应式设计 - 适配更小的屏幕 */
-        @media (max-width: 320px) {
+        @media (max-width: 400px) {
             body {
                 width: 100%;
             }
@@ -964,8 +976,42 @@
                 flex-direction: column;
             }
 
+            .keyword-input,
+            .position-input-group input {
+                min-width: 100%;
+            }
+
             .keyword-btn {
                 width: 100%;
+                padding: 12px;
+            }
+
+            .filter-group {
+                padding: 16px;
+            }
+
+            .header {
+                padding: 20px 16px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+
+        @media (min-width: 401px) and (max-width: 600px) {
+            .keyword-input-group {
+                flex-wrap: wrap;
+            }
+
+            .keyword-input {
+                min-width: calc(100% - 20px);
+                flex: 1 1 100%;
+            }
+
+            .keyword-btn {
+                flex: 1 1 calc(50% - 5px);
+                min-width: calc(50% - 5px);
             }
         }
 
@@ -1029,6 +1075,7 @@
                 </div>
 
                 <div class="filter-group">
+                    <label class="title">关键词筛选</label>
                     <div style="margin-bottom: 12px;">
                         <label class="checkbox-wrapper">
                             <input type="checkbox" id="keywords-and-mode">
@@ -1036,10 +1083,12 @@
                         </label>
                     </div>
                     <div class="keyword-input-group">
-                        <input type="text" id="keyword-input" class="keyword-input" placeholder="输入关键词">
+                        <input type="text" id="keyword-input" class="keyword-input" placeholder="输入关键词" style="flex: 1 1 100%; min-width: 100%;">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 14px;">
                         <button id="add-exclude-keyword" class="keyword-btn"
-                            style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">排除</button>
-                        <button id="add-keyword" class="keyword-btn">添加</button>
+                            style="flex: 1; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">排除</button>
+                        <button id="add-keyword" class="keyword-btn" style="flex: 1;">添加</button>
                     </div>
                     <div class="keyword-list" id="keyword-list"></div>
                     <div class="keyword-list" id="exclude-keyword-list"></div>
