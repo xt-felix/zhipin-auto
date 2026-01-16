@@ -80,7 +80,8 @@ async function initializeParser() {
             // 跳过 about:blank 和非主框架页面
 
             if (!isInIframe) {
-                createDraggablePrompt(); // 只在主框架中创建询问框
+                // 已禁用自动弹出询问框
+                // createDraggablePrompt(); // 只在主框架中创建询问框
             }
 
 
@@ -89,32 +90,37 @@ async function initializeParser() {
             const { LagouParser } = await import(extensionUrl + 'content_scripts/sites/lagou.js');
             currentParser = new LagouParser();
             // showNotification('拉勾网初始化完成-GoodHR', 'status');
-            createDraggablePrompt();
+            // 已禁用自动弹出询问框
+            // createDraggablePrompt();
         } else if (url.includes('lpt.liepin.com')) {
             ParserName = 'liepin'
             const { LiepinParser } = await import(extensionUrl + 'content_scripts/sites/liepin.js');
             currentParser = new LiepinParser();
             // showNotification('猎聘网初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
-            createDraggablePrompt();
+            // 已禁用自动弹出询问框
+            // createDraggablePrompt();
         } else if (url.includes('h.liepin.com')) {
             ParserName = 'hliepin'
             const { HLiepinParser } = await import(extensionUrl + 'content_scripts/sites/hliepin.js');
             currentParser = new HLiepinParser();
             // showNotification('猎聘网初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
-            createDraggablePrompt();
+            // 已禁用自动弹出询问框
+            // createDraggablePrompt();
         }else if (url.includes('employer.58.com')) {
             ParserName = 'employer58'
             const { Employer58Parser } = await import(extensionUrl + 'content_scripts/sites/employer58.js');
             currentParser = new Employer58Parser();
             // showNotification('58同城初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
-            createDraggablePrompt();
+            // 已禁用自动弹出询问框
+            // createDraggablePrompt();
         }  else if (url.includes('zhaopin.com')) {
 
             ParserName = 'zhilian'
             const { ZhilianParser } = await import(extensionUrl + 'content_scripts/sites/zhilian.js');
             currentParser = new ZhilianParser();
             // showNotification('智联网初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
-            createDraggablePrompt();
+            // 已禁用自动弹出询问框
+            // createDraggablePrompt();
         }
 
         if (currentParser) {
@@ -1607,7 +1613,8 @@ try {
     // loadAdConfig();
 
     initializeParser().then(() => {
-        createDraggablePrompt();
+        // 已禁用自动弹出询问框
+        // createDraggablePrompt();
     });
 } catch (error) {
     console.error('初始化失败:', error);
