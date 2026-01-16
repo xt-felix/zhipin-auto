@@ -143,10 +143,10 @@ class DeviceFingerprint {
             }
 
             // 获取API基础URL
-            const apiBase = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'https://goodhr.58it.cn';
+            const apiBase = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'http://127.0.0.1:8000';
             
             // 调用API检查设备使用状态
-            const response = await fetch(`${apiBase}/checkfingerprint.php?fingerprint=${encodeURIComponent(this.fingerprint)}&phone=${encodeURIComponent(phone)}`);
+            const response = await fetch(`${apiBase}/checkfingerprint?fingerprint=${encodeURIComponent(this.fingerprint)}&phone=${encodeURIComponent(phone)}`);
             const data = await response.json();
             
             return data;
@@ -172,10 +172,10 @@ class DeviceFingerprint {
             }
 
             // 获取API基础URL
-            const apiBase = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'https://goodhr.58it.cn';
+            const apiBase = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'http://127.0.0.1:8000';
             
             // 调用API检查试用期状态
-            const response = await fetch(`${apiBase}/checkaitrial.php?fingerprint=${encodeURIComponent(this.fingerprint)}`);
+            const response = await fetch(`${apiBase}/checkaitrial?fingerprint=${encodeURIComponent(this.fingerprint)}`);
             const data = await response.json();
             
             return data;

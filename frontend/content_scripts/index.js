@@ -80,7 +80,8 @@ async function initializeParser() {
             // 跳过 about:blank 和非主框架页面
 
             if (!isInIframe) {
-                createDraggablePrompt(); // 只在主框架中创建询问框
+                // 已禁用自动弹出询问框
+                // createDraggablePrompt(); // 只在主框架中创建询问框
             }
 
 
@@ -89,32 +90,37 @@ async function initializeParser() {
             const { LagouParser } = await import(extensionUrl + 'content_scripts/sites/lagou.js');
             currentParser = new LagouParser();
             // showNotification('拉勾网初始化完成-GoodHR', 'status');
-            createDraggablePrompt();
+            // 已禁用自动弹出询问框
+            // createDraggablePrompt();
         } else if (url.includes('lpt.liepin.com')) {
             ParserName = 'liepin'
             const { LiepinParser } = await import(extensionUrl + 'content_scripts/sites/liepin.js');
             currentParser = new LiepinParser();
             // showNotification('猎聘网初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
-            createDraggablePrompt();
+            // 已禁用自动弹出询问框
+            // createDraggablePrompt();
         } else if (url.includes('h.liepin.com')) {
             ParserName = 'hliepin'
             const { HLiepinParser } = await import(extensionUrl + 'content_scripts/sites/hliepin.js');
             currentParser = new HLiepinParser();
             // showNotification('猎聘网初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
-            createDraggablePrompt();
+            // 已禁用自动弹出询问框
+            // createDraggablePrompt();
         }else if (url.includes('employer.58.com')) {
             ParserName = 'employer58'
             const { Employer58Parser } = await import(extensionUrl + 'content_scripts/sites/employer58.js');
             currentParser = new Employer58Parser();
             // showNotification('58同城初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
-            createDraggablePrompt();
+            // 已禁用自动弹出询问框
+            // createDraggablePrompt();
         }  else if (url.includes('zhaopin.com')) {
 
             ParserName = 'zhilian'
             const { ZhilianParser } = await import(extensionUrl + 'content_scripts/sites/zhilian.js');
             currentParser = new ZhilianParser();
             // showNotification('智联网初始化完成，请前往推荐人才页面使用-GoodHR', 'status');
-            createDraggablePrompt();
+            // 已禁用自动弹出询问框
+            // createDraggablePrompt();
         }
 
         if (currentParser) {
@@ -493,8 +499,8 @@ async function processElement(element, doc) {
 
     try {
         // 发送计数请求到服务器（不等待响应）
-        const apiBase = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'https://goodhr.58it.cn';
-        fetch(`${apiBase}/counter.php`, {
+        const apiBase = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'http://127.0.0.1:8000';
+        fetch(`${apiBase}/counter`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -848,66 +854,18 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                 await startAutoScroll();
                 sendResponse({ status: 'success' });
                                 break;
+            // 广告功能暂时屏蔽
             case 'SHOW_ADS':
-
-            console.log('收到显示广告消息:', message);
-            
-                // 检查广告配置是否已加载
-                if (adConfig) {
-                    // 检查AI是否过期
-                    chrome.storage.local.get(['ai_expire_time'], function(result) {
-                        let isAIExpired = true;
-                        if (result.ai_expire_time) {
-
-                            const now = new Date();
-                            let expireDate = null;
-                            try {
-                                 expireDate = new Date(result.ai_expire_time + 'T00:00:00');
-                                if (now > expireDate) {
-                                    isAIExpired = true;
-                                }
-                            } catch (error) {
-                                console.error('解析AI到期时间失败:', error);
-                                sendResponse({ status: 'error', message: '解析AI到期时间失败' });
-                                isAIExpired = true;
-                            }     
-                           
-
-                        }
-                        
-                        // 广告显示条件：AI未过期（或无到期时间）
-                        // const shouldShowAd = vip_show|| ;
-                        
-                        // if (isAIExpired ) {
-                            // 显示广告
-                            displayAds(isAIExpired);
-                            // 标记广告已显示
-                            chrome.storage.local.set({adDisplayed: true});
-                        // }
-                        sendResponse({ status: 'success' });
-                    });
-                } else {
-                    sendResponse({ status: 'error', message: '广告配置未加载' });
-                }
-                return true; // 异步发送响应
-
-                enableSound = currentParser.aiSettings.enableSound
-
-
-                // console.log('设置AI模式:', {
-                //     aiMode: currentParser.aiMode,
-                //     aiSettings: currentParser.aiSettings
-                // });
-
+                console.log('广告功能已屏蔽');
+                sendResponse({ status: 'disabled', message: '广告功能已屏蔽' });
                 break;
             case 'STOP_SCROLL':
                 stopAutoScroll();
                 sendResponse({ status: 'stopped' });
                 break;
             case 'REMOVE_ADS':
-                // 移除所有广告元素
-                removeAds();
-                sendResponse({ status: 'success' });
+                console.log('广告功能已屏蔽');
+                sendResponse({ status: 'disabled', message: '广告功能已屏蔽' });
                 break;
             case 'UPDATE_KEYWORDS':
                 if (currentParser) {
@@ -1482,7 +1440,6 @@ async function sendMessage(message) {
 }
 
 function createDraggablePrompt() {
-    return
     // 如果已经存在询问框，先移除它
     if (currentPrompt) {
         currentPrompt.remove();
@@ -1506,13 +1463,13 @@ function createDraggablePrompt() {
     prompt.innerHTML = `
         <div style='cursor: move; display: flex; justify-content: space-between; align-items: center;'>
             <div style='display: flex; align-items: center;'>
-                <strong style='color: #1a73e8; margin-right: 5px; font-size: 16px;'>GoodHR 插件</strong>
+                <strong style='color: #1a73e8; margin-right: 5px; font-size: 16px;'>SmartHR Assistant</strong>
                 <span style='background-color: #e8f0fe; color: #1a73e8; padding: 2px 6px; border-radius: 10px; font-size: 12px;'>v${window.GOODHR_CONFIG ? window.GOODHR_CONFIG.VERSION : chrome.runtime.getManifest().version}</span>
             </div>
             <span style='font-size: 12px; color: #999;'>拖动</span>
         </div>
         <div style='margin-top: 15px; text-align: center;'>
-            <div style='margin-bottom: 15px; font-size: 14px;'>是否打开 GoodHR 插件？</div>
+            <div style='margin-bottom: 15px; font-size: 14px;'>是否打开 SmartHR 插件？</div>
             <div>
                 <button id='open-plugin' style='
                     padding: 5px 20px;
@@ -1651,11 +1608,12 @@ function createDraggablePrompt() {
 try {
     // 检查是否在iframe中
     const isInIframe = window !== window.top;
-    
-    // 只加载广告配置，不在这里显示广告
-    loadAdConfig();
+
+    // 广告功能已屏蔽
+    // loadAdConfig();
 
     initializeParser().then(() => {
+        // 已禁用自动弹出询问框
         // createDraggablePrompt();
     });
 } catch (error) {
@@ -1724,10 +1682,12 @@ let adConfig = null;
 
 // 在文件中添加广告相关函数
 // 加载广告配置
+// 加载广告配置（已屏蔽功能）
 async function loadAdConfig() {
     try {
+        // 注意：该接口已被屏蔽，不再调用
         // 从服务器加载广告配置，与popup中的实现保持一致
-        const API_BASE = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'https://goodhr.58it.cn';
+        const API_BASE = window.GOODHR_CONFIG ? window.GOODHR_CONFIG.API_BASE : 'http://127.0.0.1:8000';
         const response = await fetch(`${API_BASE}/ads.json`);
         if (response.ok) {
             adConfig = await response.json();

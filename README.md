@@ -8,12 +8,20 @@
 SmartHR-Assistant/
 ├── frontend/          # Chrome 浏览器扩展（前端）
 │   ├── manifest.json
+│   ├── config.js      # 配置文件（API地址等）
 │   ├── popup/
 │   ├── content_scripts/
 │   └── background.js
-├── backend/           # 后端 API 服务
-├── docs/              # 项目文档
-│   └── BACKEND_API_SPEC.md
+├── backend/           # Django 后端 API 服务（已完成）
+│   ├── manage.py      # Django 管理脚本
+│   ├── smart_hr/      # 项目配置
+│   ├── user/          # 用户应用（models, views）
+│   ├── db.sqlite3     # SQLite 数据库
+│   ├── README.md      # 后端使用文档
+│   ├── API_SPEC.md    # API 接口规范
+│   └── requirements.txt  # Python 依赖
+├── TODO-frontend.md   # 前端开发进度
+├── TODO-backend.md    # 后端开发计划
 ├── README.md
 └── LICENSE
 ```
@@ -31,6 +39,7 @@ SmartHR-Assistant/
 | AI 智能筛选（高级版） | 调用 AI API 判断候选人匹配度 | ✅ |
 | 自动打招呼 | 对匹配的候选人自动发送问候 | ✅ |
 | 设备指纹识别 | 使用 FingerprintJS 生成设备唯一标识 | ✅ |
+| 拖拽提示框 | 页面加载时显示确认框，可拖拽移动 | ✅ |
 
 #### 配置功能
 | 功能 | 说明 | 状态 |
@@ -48,26 +57,76 @@ SmartHR-Assistant/
 | 提示音 | 匹配成功时播放提示音 | ✅ |
 | 可视化高亮 | 处理中/已打招呼/未打招呼 不同颜色标记 | ✅ |
 | AI 决策动画 | AI 思考时显示动画提示 | ✅ |
-| 广告展示 | 支持可拖拽的页面广告 | ✅ |
-| 打赏排行榜 | 展示打赏用户列表 | ✅ |
+| 使用统计 | 统计打招呼次数 | ✅ |
 
-### 后端（API 服务）- 待开发
+#### 已屏蔽功能（代码保留，可随时启用）
+| 功能 | 说明 | 状态 |
+|------|------|------|
+| 广告系统 | 页面广告展示 | 🔒 已屏蔽 |
+| 打赏排行榜 | 打赏用户列表 | 🔒 已屏蔽 |
+| 版本检查 | 自动检查更新 | 🔒 已屏蔽 |
 
-| 功能 | 状态 |
-|------|------|
-| 用户配置云同步 | ❌ 待开发 |
-| AI 试用期管理 | ❌ 待开发 |
-| 设备指纹绑定检查 | ❌ 待开发 |
-| 版本检查与公告 | ❌ 待开发 |
-| 广告配置 | ❌ 待开发 |
-| 打赏排行榜 | ❌ 待开发 |
-| 使用统计 | ❌ 待开发 |
+### 后端（Django API 服务）- ✅ 已完成
+
+**技术栈**: Django 2.2.4 + Python 3.11 + SQLite
+
+| 功能 | API | 优先级 | 状态 |
+|------|-----|--------|------|
+| 用户配置-获取 | `/getjson` | P0 | ✅ 已完成 |
+| 用户配置-保存 | `/updatejson` | P0 | ✅ 已完成 |
+| AI 试用期管理 | `/checkaitrial` | P0 | ✅ 已完成 |
+| 设备指纹检查 | `/checkfingerprint` | P0 | ✅ 已完成 |
+| 使用统计 | `/counter` | P1 | ✅ 已完成 |
+
+#### 快速启动后端
+
+```bash
+cd backend
+python3.11 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+# 访问: http://127.0.0.1:8000
+```
+
+详细后端文档：
+- [后端使用文档](backend/README.md) - 安装、配置、部署
+- [API 接口规范](backend/API_SPEC.md) - 完整 API 文档
 
 ### 当前可用状态
 
-- **免费版功能**：完全可用（纯前端，无需后端）
-- **AI 高级版**：部分可用（AI 筛选可用，试用期/付费管理需后端）
-- **云同步功能**：不可用（需要后端支持）
+- **免费版功能**：✅ 完全可用（纯前端，无需后端）
+- **AI 高级版**：✅ 完全可用（AI 筛选 + 试用期管理）
+- **云同步功能**：✅ 可用（配置云端存储和同步）
+- **使用统计**：✅ 可用（记录和统计用户操作）
+
+## 快速开始
+
+### 前端安装
+
+1. 打开 Chrome 浏览器，进入 `chrome://extensions/`
+2. 开启「开发者模式」
+3. 点击「加载已解压的扩展程序」
+4. 选择 `frontend` 目录
+
+### 后端启动（可选）
+
+如果需要云同步、AI试用期管理等功能，启动后端服务：
+
+```bash
+cd backend
+python3.11 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+然后修改 `frontend/config.js`：
+```javascript
+API_BASE: 'http://127.0.0.1:8000',  // 本地开发
+```
 
 ## 未来规划
 
@@ -88,23 +147,16 @@ SmartHR-Assistant/
 2. **第二阶段**：扩展到猎聘、智联等其他平台
 3. **第三阶段**：结合后端实现更智能的对话管理
 
-## 前端安装方法
+## 开发文档
 
-1. 打开 Chrome 浏览器，进入 `chrome://extensions/`
-2. 开启「开发者模式」
-3. 点击「加载已解压的扩展程序」
-4. 选择 `frontend` 目录
-
-## 后端 (API Server)
-
-后端服务在 `backend/` 目录中开发，技术栈待定。
-
-详细接口规范：[docs/BACKEND_API_SPEC.md](docs/BACKEND_API_SPEC.md)
+- [前端开发进度](TODO-frontend.md)
+- [后端使用文档](backend/README.md) - 安装、配置、部署指南
+- [API 接口规范](backend/API_SPEC.md) - 完整 API 文档和示例
 
 ## 开发者
 
 - **前端**: [xt-felix](https://github.com/xt-felix)
-- **后端**: 待定
+- **后端**: [David](https://github.com/Dreamlike-sakura)
 
 ## 许可证
 

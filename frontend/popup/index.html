@@ -6,88 +6,129 @@
     <title>SmartHR Assistant</title>
     <!-- OCR功能已迁移到服务器端 -->
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            width: 300px;
-            height: 600px;
+            width: 100%;
+            min-height: 100vh;
             padding: 0;
             margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f5f7fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #ffffff;
+            color: #2d3748;
+            line-height: 1.6;
         }
 
         .container {
-
-            background: #fff;
-            /* 白色背景 */
-            border-radius: 12px;
-            margin: 8px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
+            background: #ffffff;
+            border-radius: 0;
+            margin: 0;
+            box-shadow: none;
+            overflow: visible;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
-            background: #1a73e8;
-            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 24px 20px;
             color: white;
             text-align: center;
+            position: relative;
+            box-shadow: 0 2px 20px rgba(102, 126, 234, 0.3);
         }
 
         .header h1 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 600;
+            margin: 0 0 6px 0;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .header span {
+            font-size: 13px;
+            opacity: 0.9;
+            font-weight: 400;
         }
 
         /* 选项卡样式 */
         .tab-container {
             display: flex;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e0e3e7;
+            background: #f7fafc;
+            padding: 10px;
+            gap: 10px;
+            border-bottom: 1px solid #e2e8f0;
         }
 
         .tab {
             flex: 1;
-            padding: 12px;
+            padding: 12px 20px;
             text-align: center;
             cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            color: #666;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            border-radius: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            background: transparent;
+        }
+
+        .tab:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.08);
         }
 
         .tab.active {
-            color: #1a73e8;
-            border-bottom-color: #1a73e8;
+            color: #667eea;
             background: white;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
         }
 
         .tab-content {
             display: none;
+            animation: fadeIn 0.3s ease-in-out;
         }
 
         .tab-content.active {
             display: block;
         }
 
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         /* AI配置按钮样式 */
         .ai-config-btn {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #ff6b35;
+            top: 16px;
+            right: 16px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
             color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 4px 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 6px 14px;
             font-size: 11px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.3s ease;
         }
 
         .ai-config-btn:hover {
-            background: #e55a2b;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         /* AI配置弹窗样式 */
@@ -98,8 +139,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
             z-index: 1000;
+            animation: fadeIn 0.2s ease;
         }
 
         .ai-config-content {
@@ -108,126 +151,185 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 280px;
-
+            padding: 24px;
+            border-radius: 16px;
+            width: 320px;
+            max-height: 80vh;
             overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         .ai-config-content h3 {
-            margin: 0 0 15px 0;
-            color: #1a73e8;
-            font-size: 16px;
+            margin: 0 0 20px 0;
+            color: #667eea;
+            font-size: 18px;
+            font-weight: 700;
         }
 
         .ai-config-content label {
             display: block;
-            margin-bottom: 5px;
-            font-size: 12px;
-            color: #666;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a5568;
         }
 
         .ai-config-content input,
         .ai-config-content select {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #e0e3e7;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-bottom: 10px;
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .ai-config-content input:focus,
+        .ai-config-content select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .ai-config-content .close-btn {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
+            top: 16px;
+            right: 16px;
+            background: #f7fafc;
             border: none;
-            font-size: 18px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 20px;
             cursor: pointer;
-            color: #666;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .ai-config-content .close-btn:hover {
+            background: #e2e8f0;
+            color: #1e293b;
         }
 
         .ai-config-content .save-btn {
-            background: #1a73e8;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
         .ai-config-content .save-btn:hover {
-            background: #1557b0;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
 
 
         .filter-group {
-            padding: 6px;
-            border-bottom: 1px solid #eef0f2;
+            padding: 24px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            background: white;
+            transition: background 0.2s ease;
+        }
+
+        .filter-group:hover {
+            background: #fafbfc;
         }
 
         .filter-group:last-child {
             border-bottom: none;
+            padding-bottom: 32px;
         }
 
         .filter-group label.title {
             display: block;
-            margin-bottom: 10px;
-            font-weight: 600;
-            color: #1a73e8;
-            font-size: 13px;
+            margin-bottom: 14px;
+            font-weight: 700;
+            color: #667eea;
+            font-size: 15px;
+            letter-spacing: 0.3px;
         }
 
-        .keyword-input-group {
+        .keyword-input-group,
+        .position-input-group {
             display: flex;
-            gap: 8px;
-            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 14px;
+            align-items: stretch;
         }
 
-        .keyword-input {
+        .keyword-input,
+        .position-input-group input {
             flex: 1;
-            padding: 6px 8px;
-            border: 1px solid #e0e3e7;
-            border-radius: 6px;
-            font-size: 13px;
-            transition: border-color 0.2s;
+            min-width: 200px;
+            padding: 12px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .keyword-input:focus,
+        .position-input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .keyword-btn {
-            padding: 6px 16px;
-            background: #1a73e8;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            min-width: 80px;
         }
 
         .keyword-btn:hover {
-            background: #1557b0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .keyword-btn:active {
+            transform: translateY(0);
         }
 
         .keyword-btn:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
+            transform: none;
         }
 
         /* 转圈动画 */
         .spinner {
             display: inline-block;
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 5px;
+            animation: spin 0.8s linear infinite;
+            margin-right: 6px;
             vertical-align: middle;
         }
 
@@ -240,188 +342,237 @@
         .keyword-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
-
+            gap: 8px;
+            margin-top: 8px;
         }
 
         .keyword-tag {
-            background: #e8f0fe;
-            border: 1px solid #1a73e8;
-            padding: 2px 4px;
-            border-radius: 6px;
+            background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+            border: none;
+            padding: 8px 14px;
+            border-radius: 20px;
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: #1a73e8;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #5b21b6;
+            transition: all 0.2s ease;
+        }
+
+        .keyword-tag:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(91, 33, 182, 0.2);
         }
 
         .keyword-tag button {
             background: none;
             border: none;
-            color: #1a73e8;
+            color: #5b21b6;
             cursor: pointer;
             padding: 0;
-            font-size: 16px;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 14px;
             line-height: 1;
-            opacity: 0.7;
+            opacity: 0.6;
+            transition: all 0.2s ease;
         }
 
         .keyword-tag button:hover {
             opacity: 1;
+            background: rgba(91, 33, 182, 0.1);
         }
 
         .checkbox-wrapper {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            color: #666;
-            padding: 4px 0;
+            gap: 10px;
+            font-size: 13px;
+            color: #4a5568;
+            padding: 10px 0;
+            min-height: 38px;
         }
 
         .checkbox-wrapper input[type="checkbox"] {
-            width: 14px;
-            height: 14px;
+            width: 18px;
+            height: 18px;
             margin: 0;
+            cursor: pointer;
+            accent-color: #667eea;
+            flex-shrink: 0;
         }
 
         .checkbox-label {
             user-select: none;
             cursor: pointer;
+            font-weight: 500;
+            line-height: 1.4;
         }
 
-        /* 确保底部控制按钮样式正确 */
+        /* 底部控制按钮样式 */
         .control-buttons {
             display: flex;
-            gap: 8px;
-            padding: 12px;
+            gap: 12px;
+            padding: 20px 16px;
         }
 
         .control-buttons .btn {
             flex: 1;
-            padding: 10px;
+            padding: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            font-weight: 600;
-            border-radius: 6px;
+            gap: 8px;
+            font-weight: 700;
+            border-radius: 12px;
             cursor: pointer;
+            border: none;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            min-height: 52px;
         }
 
         .start-btn {
-            background: #00c853;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
         }
 
         .stop-btn {
-            background: #ff4444;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .stop-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
         }
 
         /* 添加图标 */
         .icon {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             fill: currentColor;
         }
 
         .input-wrapper {
+            display: flex;
+            flex-direction: column;
             gap: 8px;
-            font-size: 12px;
-            color: #666;
-            margin-top: 3px;
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 8px;
         }
 
         .number-input {
-            width: 60px;
-            padding: 4px 8px;
-            border: 1px solid #e0e3e7;
-            border-radius: 4px;
+            width: 80px;
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
             font-size: 13px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .number-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .input-label {
             user-select: none;
-        }
-
-        input-con {
-            font-size: 12px !important;
-            color: #ed7878 !important;
-
-        }
-
-        .position-input-group {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 8px;
+            font-weight: 500;
         }
 
         .position-tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
-            /* margin-bottom: 8px; */
-            padding: 2px;
-            /* min-height: 32px; */
-            border: 1px dashed #e0e3e7;
-            border-radius: 6px;
-        }
-
-        .position-tag {
-            background: #f0f2f5;
-            border: 1px solid #e0e3e7;
-            padding: 4px 8px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: #666;
-            cursor: pointer;
+            gap: 8px;
+            padding: 12px;
+            min-height: 48px;
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            background: #fafbfc;
             transition: all 0.2s ease;
         }
 
+        .position-tags:empty::before {
+            content: '暂无岗位，请添加';
+            color: #94a3b8;
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        .position-tag {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            border: none;
+            padding: 8px 14px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+        }
+
         .position-tag:hover {
-            background: #e8f0fe;
-            border-color: #1a73e8;
-            color: #1a73e8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
         }
 
         .position-tag.active {
-            background: #1a73e8;
-            color: white;
-            border-color: #1557b0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
         .position-tag .remove-btn {
-            background: none;
+            background: rgba(255, 255, 255, 0.2);
             border: none;
-            color: inherit;
+            color: white;
             cursor: pointer;
-            padding: 0 2px;
+            padding: 2px 4px;
             font-size: 14px;
-            opacity: 0.7;
-            transition: opacity 0.2s;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.8;
+            transition: all 0.2s ease;
         }
 
         .position-tag .remove-btn:hover {
             opacity: 1;
-        }
-
-        .position-tag.active .remove-btn {
-            color: white;
+            background: rgba(255, 255, 255, 0.3);
         }
 
         .bottom-controls {
-            padding: 12px;
-            background: #fff;
+            padding: 20px 16px 16px;
+            background: white;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
         }
 
         .initial-buttons {
             display: flex;
             gap: 12px;
+            flex-wrap: wrap;
         }
 
         .btn {
@@ -429,56 +580,57 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 10px;
+            gap: 10px;
+            padding: 16px;
             border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            min-width: 140px;
+            min-height: 52px;
         }
 
         .primary-btn {
-            background: #1a73e8;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
         .primary-btn:hover {
-            background: #1557b0;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
         .danger-btn {
-            background: #dc3545;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
             width: 100%;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
         }
 
         .danger-btn:hover {
-            background: #bb2d3b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
         }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
 
         /* 添加按钮切换动画 */
         .initial-buttons,
         .stop-buttons {
-            transition: opacity 0.3s ease;
-        }
-
-        .hidden {
-            opacity: 0;
-            pointer-events: none;
+            transition: all 0.3s ease;
         }
 
         /* 添加排行榜样式 */
         .ranking-list {
-            margin: 10px 0;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            margin: 12px 0;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 12px;
             max-height: 800px;
             overflow-y: auto;
         }
@@ -486,25 +638,32 @@
         .ranking-item {
             display: flex;
             align-items: center;
-            padding: 8px;
-            margin-bottom: 4px;
+            padding: 12px;
+            margin-bottom: 8px;
             background: white;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease;
+        }
+
+        .ranking-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .ranking-number {
-            width: 24px;
-            height: 24px;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #1a73e8;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-radius: 50%;
-            margin-right: 8px;
-            font-size: 12px;
-            font-weight: bold;
+            margin-right: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
         }
 
         .ranking-info {
@@ -512,95 +671,126 @@
         }
 
         .ranking-name {
-            font-weight: 600;
-            color: #1a73e8;
-            margin-bottom: 2px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+            font-size: 14px;
         }
 
         .ranking-desc {
             font-size: 12px;
-            color: #666;
+            color: #64748b;
+            line-height: 1.5;
         }
 
         .ranking-price {
-            color: #f44336;
-            font-weight: bold;
-            margin-left: 8px;
+            color: #ef4444;
+            font-weight: 700;
+            margin-left: 12px;
+            font-size: 15px;
         }
 
         /* 前三名特殊样式 */
         .ranking-item:nth-child(1) .ranking-number {
-            background: #ffd700;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
         }
 
         .ranking-item:nth-child(2) .ranking-number {
-            background: #c0c0c0;
+            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+            box-shadow: 0 2px 8px rgba(148, 163, 184, 0.4);
         }
 
         .ranking-item:nth-child(3) .ranking-number {
-            background: #cd7f32;
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
         }
 
         /* 岗位说明样式 */
         .job-description {
-            width: 250px;
+            width: 100%;
             min-height: 150px;
             max-height: 250px;
-            padding: 8px;
-            border: 1px solid #e0e3e7;
-            border-radius: 6px;
-            font-size: 12px;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 13px;
             resize: vertical;
             font-family: inherit;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
+            line-height: 1.6;
+            transition: all 0.2s ease;
+        }
+
+        .job-description:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .ai-status {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            font-size: 12px;
+            gap: 10px;
+            padding: 12px;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            border: 1px solid #e2e8f0;
         }
 
         .ai-status-indicator {
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            background: #ccc;
+            background: #cbd5e1;
+            position: relative;
+            transition: all 0.3s ease;
         }
 
         .ai-status-indicator.connected {
-            background: #00c853;
+            background: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+            animation: pulse 2s ease-in-out infinite;
         }
 
         .ai-status-indicator.disconnected {
-            background: #ff4444;
+            background: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+            }
         }
 
         /* 广告样式 */
         .ad-container {
-            transition: opacity 0.3s ease;
+            transition: all 0.3s ease;
+            border-radius: 10px;
+            overflow: hidden;
         }
 
         .ad-container:hover {
-            opacity: 0.9;
+            transform: scale(1.02);
         }
 
         .ad-container .ad-title {
-            font-weight: 600;
-            margin-bottom: 4px;
+            font-weight: 700;
+            margin-bottom: 6px;
         }
 
         .ad-container .ad-content {
-            line-height: 1.4;
+            line-height: 1.6;
         }
 
         .ad-container .ad-close-btn:hover {
-            background: rgba(0, 0, 0, 0.4) !important;
+            background: rgba(0, 0, 0, 0.5) !important;
         }
 
         .ad-top {
@@ -608,13 +798,239 @@
         }
 
         .ad-middle {
-            margin: 12px 0;
+            margin: 16px 0;
         }
 
         .ad-bottom {
-            margin-top: 12px;
+            margin-top: 16px;
         }
-    </style>
+
+        /* 滚动提示 */
+        .scroll-hint {
+            text-align: center;
+            padding: 8px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            color: #667eea;
+            font-size: 11px;
+            font-weight: 600;
+            border-bottom: 1px solid #e2e8f0;
+            letter-spacing: 0.5px;
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #653d8b 100%);
+        }
+
+        /* 终端日志样式 */
+        .terminal-log {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #10b981;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            padding: 14px;
+            height: 140px;
+            overflow-y: auto;
+            font-size: 11px;
+            line-height: 1.7;
+            border-top: 2px solid #334155;
+        }
+
+        .log-entry {
+            display: flex;
+            margin-bottom: 4px;
+            animation: slideIn 0.2s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .log-entry > span:first-child {
+            color: #64748b;
+            margin-right: 8px;
+            font-weight: 700;
+        }
+
+        .log-entry.error {
+            color: #ef4444;
+        }
+
+        .log-entry.success {
+            color: #10b981;
+        }
+
+        .log-entry.warning {
+            color: #fbbf24;
+        }
+
+        .log-entry.info {
+            color: #3b82f6;
+        }
+
+        /* 链接样式 */
+        a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        a:hover {
+            color: #5568d3;
+            text-decoration: underline;
+        }
+
+        /* 信息提示样式 */
+        .info-hint {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 6px;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-left: 3px solid #667eea;
+            border-radius: 4px;
+            line-height: 1.5;
+        }
+
+        /* 优化按钮样式 */
+        #ai-optimize-job-description {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+        }
+
+        #ai-optimize-job-description:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+        }
+
+        /* 刷新按钮样式 */
+        #refresh-fingerprint {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+        }
+
+        #refresh-fingerprint:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 设备指纹显示样式 */
+        #fingerprint-display {
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 11px;
+            background: #f8fafc;
+            padding: 8px;
+            border-radius: 6px;
+            word-break: break-all;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            min-height: 24px;
+        }
+
+        /* 响应式设计 - 适配更小的屏幕 */
+        @media (max-width: 400px) {
+            body {
+                width: 100%;
+            }
+
+            .keyword-input-group,
+            .position-input-group {
+                flex-direction: column;
+            }
+
+            .keyword-input,
+            .position-input-group input {
+                min-width: 100%;
+            }
+
+            .keyword-btn {
+                width: 100%;
+                padding: 12px;
+            }
+
+            .filter-group {
+                padding: 16px;
+            }
+
+            .header {
+                padding: 20px 16px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+
+        @media (min-width: 401px) and (max-width: 600px) {
+            .keyword-input-group {
+                flex-wrap: wrap;
+            }
+
+            .keyword-input {
+                min-width: calc(100% - 20px);
+                flex: 1 1 100%;
+            }
+
+            .keyword-btn {
+                flex: 1 1 calc(50% - 5px);
+                min-width: calc(50% - 5px);
+            }
+        }
+
+        /* 侧边栏专用样式 */
+        .scroll-container {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* 底部固定区域 */
+        .bottom-fixed {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+            z-index: 100;
+        }
+</style>
 
 
 </head>
@@ -624,7 +1040,6 @@
         <div class="header">
             <h1>SmartHR Assistant<span id="version"></span></h1>
             <span>智能HR招聘助手</span>
-            <span>基于 GoodHR 二次开发</span>
         </div>
 
         <!-- 选项卡 -->
@@ -635,9 +1050,8 @@
 
         <!-- 免费版内容 -->
         <div class="tab-content active" id="free-tab">
-            <div style="height: 330px; overflow-y: scroll;">
-                <div
-                    style="text-align: center; padding: 5px; background: #f0f8ff; color: #1a73e8; font-size: 11px; border-bottom: 1px solid #e0e3e7;">
+            <div class="scroll-container">
+                <div class="scroll-hint">
                     ↓ 可以往下滑动查看更多设置 ↓
                 </div>
                 <div class="filter-group">
@@ -646,7 +1060,7 @@
                         <input type="text" id="phone-input" class="keyword-input" placeholder="输入手机号以同步配置">
                         <button id="bind-phone" class="keyword-btn">绑定</button>
                     </div>
-                    <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                    <div class="info-hint">
                         * 绑定手机号后可以从服务器同步你的配置(关键词等等)(无需验证)
                     </div>
                 </div>
@@ -661,121 +1075,95 @@
                 </div>
 
                 <div class="filter-group">
-                    <div style="margin-bottom: 8px;">
+                    <label class="title">关键词筛选</label>
+                    <div style="margin-bottom: 12px;">
                         <label class="checkbox-wrapper">
                             <input type="checkbox" id="keywords-and-mode">
                             <span class="checkbox-label">全部关键词都必须匹配</span>
                         </label>
                     </div>
                     <div class="keyword-input-group">
-                        <div>
-                            <input type="text" id="keyword-input" class="keyword-input" placeholder="输入关键词"
-                                style="width: 100px;">
-                        </div>
-
-                        <div style="display: flex;flex: 1;gap: 5px;">
-                            <button id="add-exclude-keyword" class="keyword-btn"
-                                style="background: #ff4444;">排除</button>
-                            <button id="add-keyword" class="keyword-btn">添加</button>
-                        </div>
+                        <input type="text" id="keyword-input" class="keyword-input" placeholder="输入关键词" style="flex: 1 1 100%; min-width: 100%;">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 14px;">
+                        <button id="add-exclude-keyword" class="keyword-btn"
+                            style="flex: 1; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">排除</button>
+                        <button id="add-keyword" class="keyword-btn" style="flex: 1;">添加</button>
                     </div>
                     <div class="keyword-list" id="keyword-list"></div>
                     <div class="keyword-list" id="exclude-keyword-list"></div>
 
-                    <!-- //索要手机号 -->
-                     <div style="margin-bottom: 8px;display: flex;gap: 10px;">
-                        <label class="checkbox-wrapper">
+                    <!-- 索要信息选项 -->
+                    <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px;">
+                        <label class="checkbox-wrapper" style="padding: 0;">
                             <input type="checkbox" class="collect-phone">
                             <span class="checkbox-label">索要手机号</span>
                         </label>
 
-                        <label class="checkbox-wrapper">
+                        <label class="checkbox-wrapper" style="padding: 0;">
                             <input type="checkbox" class="collect-wechat">
                             <span class="checkbox-label">索要微信号</span>
                         </label>
 
-                        <label class="checkbox-wrapper">
+                        <label class="checkbox-wrapper" style="padding: 0;">
                             <input type="checkbox" class="collect-resume">
                             <span class="checkbox-label">索要简历</span>
                         </label>
                     </div>
-                    <!-- //索要微信号 -->
-                    <div style="margin-bottom: 8px;">
-                        
-                    </div>
-                    <!-- //索要简历 -->
-                    <div style="margin-bottom: 8px;">
-                        
-                    </div>
                 </div>
 
                 <div class="filter-group">
-                    <div style="margin-bottom: 8px;">
-                        <span class="input-label">打招呼暂停数</span>
+                    <div style="margin-bottom: 16px;">
+                        <label class="input-label" style="display: block; margin-bottom: 8px;">打招呼暂停数</label>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <input type="number" id="match-limit" class="number-input" min="1" value="200">
+                            <span style="font-size: 12px; color: #64748b;">打招呼成功多少后停止</span>
+                        </div>
+                    </div>
 
-                        <label class="input-wrapper">
-                            <div>
-                                <input type="number" id="match-limit" class="number-input" min="1" value="200">
+                    <div style="margin-bottom: 16px;">
+                        <label class="input-label" style="display: block; margin-bottom: 8px;">随机延迟秒数</label>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="number" id="delay-min" class="number-input" min="1" value="3" max="9">
+                            <span style="color: #64748b;">到</span>
+                            <input type="number" id="delay-max" class="number-input" min="1" value="5" max="10">
+                            <span style="font-size: 12px; color: #64748b;">秒</span>
+                        </div>
+                        <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+                            * 随机模拟停止的时间段，默认3-5秒
+                        </div>
+                    </div>
 
-                            </div>
-                            <span class="input-label">* 打招呼成功多少后停止</span>
-
-                        </label>
+                    <div style="margin-bottom: 16px;">
+                        <label class="input-label" style="display: block; margin-bottom: 8px;">点击候选人频率</label>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <input type="number" id="click-frequency" class="number-input" min="0" max="10" value="7">
+                            <span style="font-size: 12px; color: #64748b;">/ 10个候选人</span>
+                        </div>
+                        <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+                            * 每浏览10个候选人中随机点击查看的数量
+                        </div>
                     </div>
 
                     <div style="margin-bottom: 8px;">
-                        <span class="input-label">随机延迟秒数</span>
-
-                        <label class="input-wrapper">
-                            <div style="gap: 5px;display: flex;">
-                                <input type="number" id="delay-min" class="number-input" min="1" value="3"
-                                    max="9">
-                                    到
-                                <input type="number" id="delay-max" class="number-input" min="1" value="5"
-                                    max="10">
-                            </div>
-                            <span class="input-label">* 随机模拟停止的时间段 0-10秒，默认3-5</span>
-                        </label>
-                    </div>
-
-                    <div style="margin-bottom: 8px;">
-                        <span class="input-label">点击候选人频率</span>
-                        <label class="input-wrapper">
-                            <div>
-                                <input type="number" id="click-frequency" class="number-input" min="0" max="10"
-                                    value="7">
-                            </div>
-                            <span class="input-label">* 每浏览10个候选人中随机点击查看的数量(填10 就每个都查看)</span>
-                        </label>
-                    </div>
-
-                    <div style="margin-bottom: 8px;">
-                        <label class="input-wrapper">
-                            <span class="input-label">启用提示音</span>
+                        <label class="checkbox-wrapper">
                             <input type="checkbox" id="enable-sound" checked>
+                            <span class="checkbox-label">启用提示音</span>
                         </label>
                     </div>
                 </div>
 
                 <div class="filter-group">
                     <label class="title">使用说明</label>
-                    <label class="checkbox-wrapper">
-                        <span class="checkbox-label">
-                            <p>案例： 招聘一个英语老师、本科、英语4级、40岁以下、女</p>
-                            <p>1. 在平台比如boos 推荐牛人页面 的筛选功能中 现在筛选好 基本信息。40岁以下、女、本科、等等</p>
-                            <p>2. 打开插件 。添加岗位"英语老师"(回车键添加)，关键词"英语老师"，排除关键词(回车键添加)</p>
-                            <p>3. 点击打招呼，开始打招呼 请在运行时注意观察一下。及时调整关键词</p>
-                            <p>4. 刷新浏览器可以暂停</p>
-                        </span>
-                    </label>
-                </div>
-
-                <div class="filter-group">
-                    <label class="title">打赏记录</label>
-                    <div id="ranking-list" class="ranking-list">
-                        <!-- 排行榜数据将在这里动态显示 -->
+                    <div style="font-size: 13px; color: #4a5568; line-height: 1.8;">
+                        <p style="margin: 8px 0;"><strong>案例：</strong>招聘英语老师（本科、英语4级、40岁以下、女）</p>
+                        <p style="margin: 8px 0;">1. 在招聘平台（如Boss直聘）的筛选功能中，先筛选基本信息（40岁以下、女、本科等）</p>
+                        <p style="margin: 8px 0;">2. 打开插件，添加岗位"英语老师"，添加关键词"英语老师"</p>
+                        <p style="margin: 8px 0;">3. 点击"开始"按钮，开始自动打招呼，注意观察并及时调整关键词</p>
+                        <p style="margin: 8px 0;">4. 刷新浏览器可以暂停运行</p>
                     </div>
                 </div>
+
             </div>
         </div>
 
@@ -783,9 +1171,8 @@
         <div class="tab-content" id="ai-tab">
             <button class="ai-config-btn" id="ai-config-btn">AI配置</button>
 
-            <div style="height: 330px; overflow-y: scroll;">
-                <div
-                    style="text-align: center; padding: 5px; background: #f0f8ff; color: #1a73e8; font-size: 11px; border-bottom: 1px solid #e0e3e7;">
+            <div class="scroll-container">
+                <div class="scroll-hint">
                     ↓ 可以往下滑动查看更多设置 ↓
                 </div>
                 <div class="filter-group">
@@ -794,42 +1181,44 @@
                         <input type="text" id="ai-phone-input" class="keyword-input" placeholder="输入手机号以同步配置">
                         <button id="ai-bind-phone" class="keyword-btn">绑定</button>
                     </div>
-                    <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                    <div class="info-hint">
                         * 绑定手机号后可以从服务器同步你的配置(无需验证)(新用户绑定后自动试用3天)
                     </div>
                 </div>
 
                 <div class="filter-group">
-                     <div style=" margin-bottom: 10px;display: flex;align-items: center;">
-                                            <label class="title" style="margin-bottom:0px">AI状态</label>
-
-                                            <span style="font-size: 11px; color: #666;margin-left: 10px;"> 价格25/月，50元/永久<a href="https://goodhr.58it.cn/aidescribe.html" target="_blank">咨询购买</a> <a href="https://goodhr.58it.cn" target="_blank">获取秘钥</a></span>
-                        
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                        <label class="title" style="margin-bottom: 0;">AI状态</label>
+                        <div style="font-size: 11px; color: #667eea;">
+                            <a href="https://goodhr.58it.cn/aidescribe.html" target="_blank" style="margin-right: 8px;">咨询购买</a>
+                            <a href="https://goodhr.58it.cn" target="_blank">获取秘钥</a>
+                        </div>
                     </div>
+
                     <div class="ai-status">
                         <div class="ai-status-indicator" id="ai-status-indicator"></div>
                         <span id="ai-status-text">未连接</span>
-                        <span id="ai-expire-text" style="margin-left: 10px; font-size: 11px; color: #666;"></span>
+                        <span id="ai-expire-text" style="margin-left: auto; font-size: 11px;"></span>
                     </div>
-                    <div class="ai-balance-info" id="ai-balance-info"
-                        style="font-size: 11px; color: #666; margin-top: 5px; display: none;">
-                        <span id="ai-balance-text">轨迹流动余额: --</span>   <span >充值余额、使用教程：<a href="https://goodhr.58it.cn/describe.html" target="_blank">点我</a></span>
+
+                    <div class="ai-balance-info" id="ai-balance-info" style="font-size: 11px; color: #64748b; margin-top: 8px; display: none;">
+                        <span id="ai-balance-text">轨迹流动余额: --</span>
+                        <a href="https://goodhr.58it.cn/describe.html" target="_blank" style="margin-left: 12px;">充值教程</a>
                     </div>
-                    <div style="font-size: 11px; color: #666; margin-bottom: 10px;">
-                        
-                    </div>
-                   <div style="margin-bottom: 8px;display: flex;gap: 10px;">
-                        <label class="checkbox-wrapper">
+
+                    <!-- 索要信息选项 -->
+                    <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px;">
+                        <label class="checkbox-wrapper" style="padding: 0;">
                             <input type="checkbox" class="collect-phone">
                             <span class="checkbox-label">索要手机号</span>
                         </label>
 
-                        <label class="checkbox-wrapper">
+                        <label class="checkbox-wrapper" style="padding: 0;">
                             <input type="checkbox" class="collect-wechat">
                             <span class="checkbox-label">索要微信号</span>
                         </label>
 
-                        <label class="checkbox-wrapper">
+                        <label class="checkbox-wrapper" style="padding: 0;">
                             <input type="checkbox" class="collect-resume">
                             <span class="checkbox-label">索要简历</span>
                         </label>
@@ -848,24 +1237,27 @@
                 </div>
 
                 <div class="filter-group" id="ai-job-description-group" style="display: none;">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <label class="title">岗位要求</label>
-                        <button id="ai-optimize-job-description" class="keyword-btn" style="font-size: 12px; padding: 4px 8px;">AI优化</button>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                        <label class="title" style="margin-bottom: 0;">岗位要求</label>
+                        <button id="ai-optimize-job-description" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 6px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);">AI优化</button>
                     </div>
                     <textarea id="job-description" class="job-description"
-                        placeholder="请详细描述岗位要求，包括：&#10;1. 任职要求&#10;2. 技能要求&#10;3. 经验要求&#10;4. 其他要求&#10;&#10;AI将根据这些信息智能判断候选人是否合适&#10;输入岗位要求后点击右上角的AI优化按钮，系统会根据岗位要求优化岗位描述"></textarea>
+                        placeholder="请详细描述岗位要求，包括：&#10;1. 任职要求&#10;2. 技能要求&#10;3. 经验要求&#10;4. 其他要求&#10;&#10;AI将根据这些信息智能判断候选人是否合适"></textarea>
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: -8px;">
+                        * 输入岗位要求后点击"AI优化"按钮优化描述
+                    </div>
                 </div>
 
                 <div class="filter-group">
                     <label class="title">设置说明</label>
-                    <div style="margin-bottom: 8px;">
-                        <span class="input-label">* AI版本使用免费版的设置：随机延迟、打招呼暂停数、点击候选人频率、启用提示音</span>
+                    <div class="info-hint">
+                        AI版本使用免费版的以下设置：随机延迟、打招呼暂停数、点击候选人频率、启用提示音
                     </div>
                 </div>
 
 
                 <div class="filter-group">
-                    <label class="title">AI提示语:</label>
+                    <label class="title">AI提示语</label>
                     <textarea id="ai-click-prompt" class="job-description"
                         placeholder="请输入AI提示语，使用${候选人信息}和${岗位信息}作为标记符">你是一个资深的HR专家。请根据候选人的基本信息判断是否值得查看其详细信息。
 
@@ -884,67 +1276,48 @@
 
 请判断是否值得查看这位候选人的详细信息，返回JSON格式：{"decision":"是","reason":"符合基本要求"}
                     </textarea>
-                    <div style="font-size: 11px; color: #666; margin-bottom: 10px;">
-                        * 使用${候选人信息}和${岗位信息}作为标记符，系统会自动替换为实际内容
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: -8px;">
+                        * 使用 ${候选人信息} 和 ${岗位信息} 作为标记符，系统会自动替换为实际内容
                     </div>
-
-
-
-
                 </div>
-
-
-
 
                 <div class="filter-group">
                     <label class="title">公司信息</label>
-                    <div style="margin-bottom: 8px;">
-                        <textarea id="company-info" class="job-description" placeholder="请输入公司相关信息，包括但不限于：公司名称、公司地址、公司规模、公司行业、公司简介、公司文化/价值观、福利待遇、工作地点、公司官网等"></textarea>
-                    </div>
+                    <textarea id="company-info" class="job-description" placeholder="请输入公司相关信息：&#10;• 公司名称、地址、规模&#10;• 公司行业、业务简介&#10;• 公司文化/价值观&#10;• 福利待遇、工作地点&#10;• 公司官网等"></textarea>
                 </div>
 
                 <div class="filter-group">
                     <label class="title">岗位额外信息</label>
-                    <div style="margin-bottom: 8px;">
-                        <textarea id="job-extra-info" class="job-description" placeholder="请输入岗位额外信息，包括但不限于：岗位职责、任职要求、薪资范围、工作时间、是否加班、岗位福利、晋升空间、团队介绍、工作环境描述等"></textarea>
-                    </div>
+                    <textarea id="job-extra-info" class="job-description" placeholder="请输入岗位额外信息：&#10;• 岗位职责&#10;• 任职要求&#10;• 薪资范围、工作时间&#10;• 岗位福利、晋升空间&#10;• 团队介绍、工作环境等"></textarea>
                 </div>
 
                 
 
                 <div class="filter-group">
                     <label class="title">设备指纹</label>
-                    <div style="margin-bottom: 8px;">
-                        <div style="display: flex; align-items: center; margin-bottom: 5px;">
-                            <span style="font-size: 12px; color: #666; margin-right: 8px;">当前设备指纹:</span>
-                            <button id="refresh-fingerprint" style="font-size: 11px; background: #1a73e8; color: white; border: none; border-radius: 4px; padding: 2px 6px; cursor: pointer;">刷新</button>
-                        </div>
-                        <div id="fingerprint-display" style="font-family: monospace; font-size: 11px; background: #f5f5f5; padding: 5px; border-radius: 4px; word-break: break-all; color: #333; min-height: 20px;">加载中...</div>
-                        <div id="fingerprint-status" style="font-size: 11px; color: #666; margin-top: 5px;">状态检查中...</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 13px; color: #4a5568; font-weight: 500;">当前设备指纹</span>
+                        <button id="refresh-fingerprint">刷新</button>
                     </div>
+                    <div id="fingerprint-display">加载中...</div>
+                    <div id="fingerprint-status" style="font-size: 11px; color: #64748b; margin-top: 8px;">状态检查中...</div>
                 </div>
 
                 <div class="filter-group">
                     <label class="title">使用说明</label>
-                    <label class="checkbox-wrapper">
-                        <span class="checkbox-label">
-                            <p>AI高级版使用说明：</p>
-                            <p>1. 首先配置AI设置（点击右上角AI配置按钮）</p>
-                            <p>2. 添加岗位并详细描述岗位要求</p>
-                            <p>3. 在招聘平台筛选好基本条件</p>
-                            <p>4. 点击开始，AI将智能判断候选人是否合适</p>
-                            <p>5. 关键词功能已隐藏，AI将根据岗位说明进行智能筛选</p>
-                            <p>6. 信息里已内置 在线状态、同事沟通记录、当前日期 。如果需要这些条件 请直接在岗位中提示 : 同事最近一个月联系过的请不要联系。只联系在线的。</p>
-                        </span>
-                    </label>
-                </div>
-
-                <div class="filter-group">
-                    <label class="title">打赏记录</label>
-                    <div id="ai-ranking-list" class="ranking-list">
-                        <!-- 排行榜数据将在这里动态显示 -->
+                    <div style="font-size: 13px; color: #4a5568; line-height: 1.8;">
+                        <p style="margin: 8px 0;"><strong>AI高级版使用说明：</strong></p>
+                        <p style="margin: 8px 0;">1. 配置AI设置（点击右上角"AI配置"按钮）</p>
+                        <p style="margin: 8px 0;">2. 添加岗位并详细描述岗位要求</p>
+                        <p style="margin: 8px 0;">3. 在招聘平台筛选好基本条件（年龄、学历等）</p>
+                        <p style="margin: 8px 0;">4. 点击"开始"，AI将智能判断候选人是否合适</p>
+                        <p style="margin: 8px 0;">5. AI会根据岗位说明进行智能筛选</p>
+                        <p style="margin: 8px 0; padding: 8px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 4px;">
+                            <strong>提示：</strong>系统已内置在线状态、同事沟通记录、当前日期等信息。如需使用，请在岗位要求中说明，例如："只联系在线的候选人"或"排除最近一个月同事联系过的"
+                        </p>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -986,14 +1359,7 @@
         </div>
     </div>
 
-    <div
-        style="position: fixed; bottom: 0; left: 0; right: 0; background: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);">
-        <div style="text-align: center;margin-top: 4px;">
-            <a href="http://58it.cn" style="color: #1a73e8;" target="_blank">联系我</a>
-            <a href="http://58it.cn" style="color: #1a73e8;" target="_blank">打赏我</a>
-            <a style="margin-left: 10px;color: #1a73e8;" href="http://goodhr.58it.cn" target="_blank">前往官网</a>
-            <a style="margin-left: 10px;color: #e81a1a;" href="http://goodhr.58it.cn" target="_blank">分享给另一个HR</a>
-        </div>
+    <div class="bottom-fixed">
         <div class="bottom-controls">
             <!-- 功能选择勾选框 -->
             <!-- <div style="display: flex; justify-content: center; padding: 8px 0;">
@@ -1034,21 +1400,18 @@
                 </button>
             </div>
 
-             
+
         </div>
 
-        <div style="background: #1e1e1e; color: #00ff00; font-family: 'Consolas', monospace; padding: 8px; height: 100px; overflow-y: auto; font-size: 12px; line-height: 1.5;
-        border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+        <div class="terminal-log">
             <div id="log-container" style="display: flex; flex-direction: column;">
                 <div class="log-entry" style="display: flex;">
-                    <span style="color: #666; margin-right: 8px;">></span>
+                    <span style="color: #64748b; margin-right: 8px;">></span>
                     <span>系统就绪，等待开始...</span>
                 </div>
             </div>
         </div>
     </div>
-
-    <div style="height: 160px;"></div>
 
     <script src="../utils/fingerprint-device.js"></script>
     <script src="../config.js"></script>
